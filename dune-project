@@ -1,4 +1,4 @@
-(lang dune 3.0)
+(lang dune 2.9)
 
 (version 0.1)
 
@@ -20,9 +20,25 @@
 (package
  (name razzia)
  (synopsis "A Mirage OS friendly library for building Gemini clients")
- (description "")
+ (description "Razzia is a Mirage OS friendly library for building Gemini clients")
  (depends
   (dune
    (>= 3.0))
   (ocaml
-   (>= 4.14))))
+   (>= 4.14))
+  (tcpip
+   (>= 7.1.2))
+  (tls
+   (>= 0.15.3))
+  (tls-mirage
+   (>= 0.15.4))
+  (uri
+   (>= 4.2.0))))
+
+(package
+ (name razzia_unix)
+ (synopsis "Razzia implementation for Unix and Windows using Lwt")
+ (depends
+  razzia
+  (tcpip
+   (>= 7.1.2))))
