@@ -1,0 +1,4 @@
+(library
+ (name razzia_unix)
+ (public_name razzia.unix)
+ (libraries razzia tcpip.stack-socket))
