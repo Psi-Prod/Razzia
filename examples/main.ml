@@ -24,7 +24,13 @@ let () =
   Printexc.print_backtrace stdout
 
 let () =
+  Mirage_crypto_rng_lwt.initialize ();
   Lwt_main.run
-  @@ let* req = request_of_url (Uri.make ~host:"gemini.circumlunar.space" ()) in
-     let* resp = Razzia_unix.fetch req in
-     Lwt_io.(printl resp)
+  @@ let* req =
+       request_of_url
+         (Uri.make ~host:"gemini.circumlunar.space"
+            ~path:"/docs/specification.gmi" ())
+     in
+     let* header, body = Razzia_unix.fetch req in
+     let* () = Lwt_io.(printl header) in
+     Lwt_io.(printl body)

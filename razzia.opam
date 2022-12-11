@@ -12,6 +12,9 @@ bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
   "dune" {>= "2.9" & >= "3.0"}
   "ocaml" {>= "4.14"}
+  "mirage-clock" {>= "4.2.0"}
+  "mirage-random" {>= "3.0.0"}
+  "mirage-time" {>= "3.0.0"}
   "tcpip" {>= "7.1.2"}
   "tls" {>= "0.15.3"}
   "tls-mirage" {>= "0.15.4"}

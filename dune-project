@@ -20,12 +20,19 @@
 (package
  (name razzia)
  (synopsis "A Mirage OS friendly library for building Gemini clients")
- (description "Razzia is a Mirage OS friendly library for building Gemini clients")
+ (description
+  "Razzia is a Mirage OS friendly library for building Gemini clients")
  (depends
   (dune
    (>= 3.0))
   (ocaml
    (>= 4.14))
+  (mirage-clock
+   (>= 4.2.0))
+  (mirage-random
+   (>= 3.0.0))
+  (mirage-time
+   (>= 3.0.0))
   (tcpip
    (>= 7.1.2))
   (tls

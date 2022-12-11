@@ -1,4 +1,10 @@
 (library
  (name razzia_unix)
  (public_name razzia.unix)
- (libraries razzia tcpip.stack-socket))
+ (libraries
+  mirage-clock-unix
+  mirage-random
+  mirage-random-stdlib
+  mirage-time-unix
+  razzia
+  tcpip.stack-socket))
