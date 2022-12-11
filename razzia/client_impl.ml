@@ -1,52 +1,75 @@
-module type S = sig
-  type stack
+open Types
 
-  val fetch : Request.t -> stack -> (string * string) Lwt.t
-end
+type fetch_err =
+  [ `Host of
+    [ `BadDomainName of string
+    | `InvalidHostname of string
+    | `UnknownHost of string ]
+  | `TCP
+  | `TLS
+  | `TLSWrite ]
+
+let err_host v = Lwt.return_error (`Host v)
+let err_tls = Lwt.return_error `TLS
+let err_tls_write = Lwt.return_error `TLSWrite
+let err_tcp = Lwt.return_error `TCP
 
 module Make
     (Random : Mirage_random.S)
     (Time : Mirage_time.S)
     (Mclock : Mirage_clock.MCLOCK)
     (Pclock : Mirage_clock.PCLOCK)
-    (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.t = struct
+    (Stack : Tcpip.Stack.V4V6) =
+struct
   module TLS = Tls_mirage.Make (Stack.TCP)
   module DNS = Dns_client_mirage.Make (Random) (Time) (Mclock) (Pclock) (Stack)
+  module DNS_Client = Dns_client.Make (DNS.Transport)
   open Lwt.Infix
-  (* open Lwt.Syntax *)
+
+  let ( let^ ) = Lwt_result.bind
 
   let write flow req =
     Request.to_string req |> Cstruct.of_string |> TLS.write flow >>= function
-    | Ok () -> Lwt.return_unit
-    | Error _ -> failwith "writing"
+    | Ok () -> Lwt.return_ok ()
+    | Error _ -> err_tls_write
 
-  module D = Dns_client.Make (DNS.Transport)
+  let read flow =
+    TLS.read flow >>= function Ok v -> Lwt.return_ok v | Error _ -> err_tls
 
-  let fetch req stack =
-    (* let transport = D.create stack ~timeout:(Duration.of_sec 5) in
-       let raw = Domain_name.of_string_exn "gemini.circumlunar.space" in
-       let host = Domain_name.host_exn raw in
-       let* host_ip = DNS.gethostbyname transport host in *)
+  let resolve dns host =
+    match Ipaddr.of_string host with
+    | Ok ip -> Lwt.return_ok ip
+    | Error (`Msg _) -> (
+        match Domain_name.of_string host with
+        | Ok dn -> (
+            match Domain_name.host dn with
+            | Ok h -> (
+                DNS.gethostbyname6 dns h >>= function
+                | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
+                | Error (`Msg msg) -> err_host (`UnknownHost msg))
+            | Error (`Msg msg) -> err_host (`InvalidHostname msg))
+        | Error (`Msg msg) -> err_host (`BadDomainName msg))
 
-    (* Stack.TCP.create_connection (Stack.tcp stack) (host_ip, req.port) *)
-    Stack.TCP.create_connection (Stack.tcp stack) (req.Request.host, req.port)
-    >>= function
-    | Ok flow -> (
-        TLS.client_of_flow
-          (Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None) ())
-          flow
+  let fetch req stack : (string, fetch_err) Lwt_result.t =
+    let dns = DNS_Client.create stack ~timeout:(Duration.of_sec 5) in
+    resolve dns (Request.host req) >>= function
+    | Error _ as err -> Lwt.return err
+    | Ok addr -> (
+        Stack.TCP.create_connection (Stack.tcp stack) (addr, Request.port req)
         >>= function
         | Ok flow -> (
-            write flow req >>= fun () ->
-            TLS.read flow >>= function
-            | Ok (`Data buf) -> (
-                let header = Cstruct.to_string buf in
+            TLS.client_of_flow
+              (Tls.Config.client
+                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
+                 ())
+              flow
+            >>= function
+            | Ok flow -> (
+                let^ () = write flow req in
                 TLS.read flow >>= function
-                | Ok (`Data buf) -> Lwt.return (header, Cstruct.to_string buf)
+                | Ok (`Data buf) -> Cstruct.to_string buf |> Lwt.return_ok
                 | Ok `Eof -> failwith "eof"
-                | Error _ -> failwith "err")
-            | Ok `Eof -> failwith "eof"
-            | Error _ -> failwith "reading")
-        | Error _err -> failwith "OCaml => chier")
-    | Error err -> failwith (Format.asprintf "%a" Stack.TCP.pp_error err)
+                | Error _ -> err_tls)
+            | Error _ -> err_tls_write)
+        | Error _ -> err_tcp)
 end

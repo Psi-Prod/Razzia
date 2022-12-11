@@ -1,11 +1,20 @@
 type request
 
-val make_request : host:Ipaddr.t -> port:int -> url:Uri.t -> request
+val make_request : Uri.t -> request
+
+type fetch_err =
+  [ `Host of
+    [ `BadDomainName of string
+    | `InvalidHostname of string
+    | `UnknownHost of string ]
+  | `TCP
+  | `TLS
+  | `TLSWrite ]
 
 module type IO = sig
   type stack
 
-  val fetch : request -> stack -> (string * string) Lwt.t
+  val fetch : request -> stack -> (string, fetch_err) Lwt_result.t
 end
 
 module Mirage : sig

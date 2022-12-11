@@ -1,9 +1,22 @@
+open Types
+
 type request = Request.t
 
 let make_request = Request.make
 
+type fetch_err =
+  [ `Host of
+    [ `BadDomainName of string
+    | `InvalidHostname of string
+    | `UnknownHost of string ]
+  | `TCP
+  | `TLS
+  | `TLSWrite ]
+
 module type IO = sig
-  include Client_impl.S
+  type stack
+
+  val fetch : request -> stack -> (string, fetch_err) Lwt_result.t
 end
 
 module Mirage = struct
