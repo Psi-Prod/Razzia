@@ -102,6 +102,7 @@ end
 
 module Header = struct
   type t = { status : Status.t; meta : string }
+  type parse_err = [ `InvalidCode | `MalformedHeader | `TooLongHeader ]
 
   let re =
     Re.compile
@@ -116,6 +117,6 @@ module Header = struct
         else
           let code = Re.Group.get grp 1 |> int_of_string |> Status.from_int in
           match code with
-          | None -> Error (`InvalidCode code)
+          | None -> Error `InvalidCode
           | Some status -> Ok { status; meta })
 end

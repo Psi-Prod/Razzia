@@ -10,4 +10,5 @@ let () =
   in
   Razzia_unix.fetch req >>= function
   | Ok header -> Lwt_io.(printl header)
+  | Error (`Header `MalformedHeader) -> Lwt_io.printl "Malformed"
   | Error _ -> Lwt_io.printl "Error"

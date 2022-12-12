@@ -2,8 +2,11 @@ type request
 
 val make_request : Uri.t -> request
 
+type parse_err = [ `InvalidCode | `MalformedHeader | `TooLongHeader ]
+
 type fetch_err =
-  [ `Host of
+  [ `Header of parse_err
+  | `Host of
     [ `BadDomainName of string
     | `InvalidHostname of string
     | `UnknownHost of string ]

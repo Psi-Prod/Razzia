@@ -1,14 +1,5 @@
 open Types
 
-type fetch_err =
-  [ `Host of
-    [ `BadDomainName of string
-    | `InvalidHostname of string
-    | `UnknownHost of string ]
-  | `TCP
-  | `TLS
-  | `TLSWrite ]
-
 let err_host v = Lwt.return_error (`Host v)
 let err_tls = Lwt.return_error `TLS
 let err_tls_write = Lwt.return_error `TLSWrite
@@ -23,12 +14,10 @@ module Make
 struct
   module TLS = Tls_mirage.Make (Stack.TCP)
   module DNS = Dns_client_mirage.Make (Random) (Time) (Mclock) (Pclock) (Stack)
-  module DNS_Client = Dns_client.Make (DNS.Transport)
+  module Channel = Mirage_channel.Make (TLS)
   open Lwt.Infix
 
-  let ( let^ ) = Lwt_result.bind
-
-  let write flow req =
+  let write_request flow req =
     Request.to_string req |> Cstruct.of_string |> TLS.write flow >>= function
     | Ok () -> Lwt.return_ok ()
     | Error _ -> err_tls_write
@@ -50,26 +39,47 @@ struct
             | Error (`Msg msg) -> err_host (`InvalidHostname msg))
         | Error (`Msg msg) -> err_host (`BadDomainName msg))
 
-  let fetch req stack : (string, fetch_err) Lwt_result.t =
-    let dns = DNS_Client.create stack ~timeout:(Duration.of_sec 5) in
-    resolve dns (Request.host req) >>= function
-    | Error _ as err -> Lwt.return err
-    | Ok addr -> (
-        Stack.TCP.create_connection (Stack.tcp stack) (addr, Request.port req)
+  let ( let* ) = Lwt_result.Syntax.( let* )
+  let ( let+ ) = Lwt_result.Syntax.( let+ )
+
+  let read_header chan =
+    let buf = Buffer.create 1024 in
+    let rec parse len cr =
+      if len < 1024 then
+        Channel.read_char chan >>= function
+        | Ok (`Data '\n') when cr -> Buffer.contents buf |> Lwt.return_ok
+        | Ok (`Data '\r') -> parse (len + 1) true
+        | Ok (`Data c) ->
+            Buffer.add_char buf c;
+            parse (len + 1) false
+        | Ok `Eof -> Lwt.return_error `MalformedHeader
+        | Error _ -> err_tls
+      else Lwt.return_error `MalformedHeader
+    in
+    parse 0 false >>= function
+    | Ok h -> Lwt.return_ok h
+    | Error err -> Lwt.return_error err
+
+  let fetch req stack =
+    let dns = DNS.create stack in
+    let* addr = resolve dns (Request.host req) in
+    Stack.TCP.create_connection (Stack.tcp stack) (addr, Request.port req)
+    >>= function
+    | Ok flow -> (
+        TLS.client_of_flow
+          (Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None) ())
+          flow
         >>= function
         | Ok flow -> (
-            TLS.client_of_flow
-              (Tls.Config.client
-                 ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None)
-                 ())
-              flow
-            >>= function
-            | Ok flow -> (
-                let^ () = write flow req in
-                TLS.read flow >>= function
-                | Ok (`Data buf) -> Cstruct.to_string buf |> Lwt.return_ok
-                | Ok `Eof -> failwith "eof"
+            write_request flow req >>= function
+            | Ok () -> (
+                let chan = Channel.create flow in
+                read_header chan >>= function
+                | Ok header -> Lwt.return_ok header
+                | Error (#Header.parse_err as err) ->
+                    Lwt.return_error (`Header err)
                 | Error _ -> err_tls)
             | Error _ -> err_tls_write)
-        | Error _ -> err_tcp)
+        | Error _ -> err_tls_write)
+    | Error _ -> err_tcp
 end

@@ -4,8 +4,11 @@ type request = Request.t
 
 let make_request = Request.make
 
+type parse_err = Header.parse_err
+
 type fetch_err =
-  [ `Host of
+  [ `Header of parse_err
+  | `Host of
     [ `BadDomainName of string
     | `InvalidHostname of string
     | `UnknownHost of string ]

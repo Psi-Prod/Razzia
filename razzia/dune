@@ -3,6 +3,7 @@
  (name razzia)
  (libraries
   dns-client.mirage
+  mirage-channel
   mirage-random
   mirage-time
   tls
