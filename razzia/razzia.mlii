@@ -3,7 +3,7 @@ type header
 
 val make_request : Uri.t -> request
 
-type header_err = [ `InvalidCode | `Malformed | `TooLong ]
+type header_err = [ `InvalidCode | `MalformedHeader | `TooLongHeader ]
 
 type fetch_err =
   [ `Header of header_err
@@ -11,16 +11,22 @@ type fetch_err =
     [ `BadDomainName of string
     | `InvalidHostname of string
     | `UnknownHost of string ]
-  | `NetErr ]
+  | `TCP
+  | `TLS
+  | `TLSWrite ]
 
 val pp_header_err : Format.formatter -> header_err -> unit
 val pp_fetch_err : Format.formatter -> fetch_err -> unit
-val pp_header : Format.formatter -> header -> unit
+
+(** TODO: remove this *)
+module Header : sig
+  val pp : Format.formatter -> header -> unit
+end
 
 module type IO = sig
   type stack
 
-  val get : stack -> request -> (header * string, fetch_err) Lwt_result.t
+  val fetch : stack -> request -> (header, fetch_err) Lwt_result.t
 end
 
 module Mirage : sig

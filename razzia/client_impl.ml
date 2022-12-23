@@ -1,10 +1,3 @@
-open Types
-
-let err_host v = Lwt.return_error (`Host v)
-let err_tls = Lwt.return_error `TLS
-let err_tls_write = Lwt.return_error `TLSWrite
-let err_tcp = Lwt.return_error `TCP
-
 module Make
     (Random : Mirage_random.S)
     (Time : Mirage_time.S)
@@ -15,15 +8,16 @@ struct
   module TLS = Tls_mirage.Make (Stack.TCP)
   module DNS = Dns_client_mirage.Make (Random) (Time) (Mclock) (Pclock) (Stack)
   module Channel = Mirage_channel.Make (TLS)
-  open Lwt.Infix
+
+  let ( >>= ) = Lwt.( >>= )
+  let net_err = Lwt.return_error `NetErr
 
   let write_request flow req =
-    Request.to_string req |> Cstruct.of_string |> TLS.write flow >>= function
-    | Ok () -> Lwt.return_ok ()
-    | Error _ -> err_tls_write
+    Request.to_string req |> Printf.sprintf "%s\r\n" |> Cstruct.of_string
+    |> TLS.write flow
 
   let read flow =
-    TLS.read flow >>= function Ok v -> Lwt.return_ok v | Error _ -> err_tls
+    TLS.read flow >>= function Ok v -> Lwt.return_ok v | Error _ -> net_err
 
   let resolve dns host =
     match Ipaddr.of_string host with
@@ -35,15 +29,14 @@ struct
             | Ok h -> (
                 DNS.gethostbyname6 dns h >>= function
                 | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
-                | Error (`Msg msg) -> err_host (`UnknownHost msg))
-            | Error (`Msg msg) -> err_host (`InvalidHostname msg))
-        | Error (`Msg msg) -> err_host (`BadDomainName msg))
-
-  let ( let* ) = Lwt_result.Syntax.( let* )
-  let ( let+ ) = Lwt_result.Syntax.( let+ )
+                | Error (`Msg msg) ->
+                    `Host (`UnknownHost msg) |> Lwt.return_error)
+            | Error (`Msg msg) ->
+                `Host (`InvalidHostname msg) |> Lwt.return_error)
+        | Error (`Msg msg) -> `Host (`BadDomainName msg) |> Lwt.return_error)
 
   let read_header chan =
-    let buf = Buffer.create 1024 in
+    let buf = Buffer.create (1024 + 3) in
     let rec parse len cr =
       if len < 1024 then
         Channel.read_char chan >>= function
@@ -52,15 +45,27 @@ struct
         | Ok (`Data c) ->
             Buffer.add_char buf c;
             parse (len + 1) false
-        | Ok `Eof -> Lwt.return_error `MalformedHeader
-        | Error _ -> err_tls
-      else Lwt.return_error `MalformedHeader
+        | Ok `Eof -> Lwt.return_error `Malformed
+        | Error _ -> net_err
+      else Lwt.return_error `Malformed
     in
     parse 0 false >>= function
-    | Ok h -> Lwt.return_ok h
-    | Error err -> Lwt.return_error err
+    | Ok h -> (
+        match Header.parse h with
+        | Ok h -> Lwt.return_ok h
+        | Error err -> Lwt.return_error (`Header err))
+    | Error `Malformed -> Lwt.return_error (`Header `Malformed)
+    | Error _ -> net_err
 
-  let fetch req stack =
+  let read_body chan =
+    Channel.read_some chan >>= function
+    | Ok (`Data cstruct) -> Cstruct.to_string cstruct |> Lwt.return_ok
+    | Ok `Eof -> Lwt.return_error `PrematuredEof
+    | Error _ -> net_err
+
+  let ( let* ) = Lwt_result.bind
+
+  let get stack req =
     let dns = DNS.create stack in
     let* addr = resolve dns (Request.host req) in
     Stack.TCP.create_connection (Stack.tcp stack) (addr, Request.port req)
@@ -75,11 +80,13 @@ struct
             | Ok () -> (
                 let chan = Channel.create flow in
                 read_header chan >>= function
-                | Ok header -> Lwt.return_ok header
-                | Error (#Header.parse_err as err) ->
-                    Lwt.return_error (`Header err)
-                | Error _ -> err_tls)
-            | Error _ -> err_tls_write)
-        | Error _ -> err_tls_write)
-    | Error _ -> err_tcp
+                | Ok header -> (
+                    read_body chan >>= function
+                    | Ok body -> Lwt.return_ok (header, body)
+                    | Error `NetErr -> net_err
+                    | Error `PrematuredEof -> net_err)
+                | Error err -> Lwt.return_error err)
+            | Error _ -> net_err)
+        | Error _ -> net_err)
+    | Error _ -> net_err
 end
