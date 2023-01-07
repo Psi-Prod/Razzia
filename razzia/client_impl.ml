@@ -13,7 +13,7 @@ struct
   let net_err = Lwt.return_error `NetErr
 
   let write_request flow req =
-    Request.to_string req |> Printf.sprintf "%s\r\n" |> Cstruct.of_string
+    Format.asprintf "%a" Request.pp req |> Cstruct.of_string
     |> TLS.write flow
 
   let read flow =
@@ -27,8 +27,8 @@ struct
         | Ok dn -> (
             match Domain_name.host dn with
             | Ok h -> (
-                DNS.gethostbyname6 dns h >>= function
-                | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
+                DNS.gethostbyname dns h >>= function
+                | Ok addr -> Lwt.return_ok (Ipaddr.V4 addr)
                 | Error (`Msg msg) ->
                     `Host (`UnknownHost msg) |> Lwt.return_error)
             | Error (`Msg msg) ->

@@ -1,7 +1,17 @@
 type request
 type header
+type body = string
 
-val make_request : Uri.t -> request
+type request_err =
+  [ `AboveMaxSize
+  | `BeginWithBOM
+  | `EmptyURL
+  | `MalformedUTF8
+  | `MissingHost
+  | `MissingScheme
+  | `UserInfoNotAllowed ]
+
+val make_request : ?smart_scheme:bool -> string -> (request, request_err) result
 
 type header_err = [ `InvalidCode | `Malformed | `TooLong ]
 
@@ -13,14 +23,17 @@ type fetch_err =
     | `UnknownHost of string ]
   | `NetErr ]
 
+val pp_request_err : Format.formatter -> request_err -> unit
 val pp_header_err : Format.formatter -> header_err -> unit
 val pp_fetch_err : Format.formatter -> fetch_err -> unit
 val pp_header : Format.formatter -> header -> unit
 
-module type IO = sig
+module type NET = sig
+  module IO : Types.IO
+
   type stack
 
-  val get : stack -> request -> (header * string, fetch_err) Lwt_result.t
+  val get : stack -> request -> (header * body, fetch_err) result IO.t
 end
 
 module Mirage : sig
@@ -30,5 +43,5 @@ module Mirage : sig
     (Mclock : Mirage_clock.MCLOCK)
     (Pclock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    -> IO with type stack = Stack.t
+    -> NET with type stack = Stack.t
 end

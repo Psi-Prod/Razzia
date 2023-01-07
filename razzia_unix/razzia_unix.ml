@@ -10,13 +10,8 @@ let stack ~v4 ~v6 =
   let* udp = Stack.UDP.connect ~ipv4_only:false ~ipv6_only:false v4 v6 in
   Stack.connect udp tcp
 
-let get ?v4 ?v6 req =
+let get ?(v4=Ipaddr.V4.Prefix.loopback) ?v6 req =
   let* stack =
-    let v4 =
-      match v4 with
-      | Some ip -> Ipaddr.V4.Prefix.of_string_exn ip
-      | None -> Ipaddr.V4.Prefix.loopback
-    in
-    stack ~v4 ~v6:(Option.map Ipaddr.V6.Prefix.of_string_exn v6)
+    stack ~v4 ~v6
   in
   get stack req

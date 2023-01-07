@@ -3,15 +3,16 @@ open Lwt.Syntax
 let ( >>= ) = Lwt.( >>= )
 
 let main () =
-  let req =
-    Uri.of_string "gemini://gemini.circumlunar.space/"
-    |> Razzia.make_request
-  in
   let* () =
-    Razzia_unix.get req >>= function
-    | Ok (header, body) -> Lwt_fmt.printf "%a\n%s" Razzia.pp_header header body
-    | Error err -> Lwt_fmt.printf "%a\n" Razzia.pp_fetch_err err
+    match Razzia.make_request "gemini://gemini.circumlunar.space/" with
+    | Ok req -> (
+        Razzia_unix.get req >>= function
+        | Ok (header, body) ->
+            Lwt_fmt.printf "%a\n%s" Razzia.pp_header header body
+        | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_fetch_err err)
+    | Error err -> Lwt_fmt.printf "Request error: %a" Razzia.pp_request_err err
   in
+  let* () = Lwt_io.print "\n" in
   Lwt_fmt.flush Lwt_fmt.stdout
 
 let () =

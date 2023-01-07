@@ -1,10 +1,13 @@
 type request = Request.t
 type header = Header.t
+type body = string
+type request_err = Request.err
 
 let make_request = Request.make
 
 type header_err = Header.parse_err
 
+let pp_request_err = Request.pp_err
 let pp_header_err = Header.pp_err
 
 type fetch_err =
@@ -25,12 +28,12 @@ let pp_fetch_err fmt = function
 
 let pp_header = Header.pp
 
-(* type response = Input of { sensitive : bool } *)
+module type NET = sig
+  module IO : Types.IO
 
-module type IO = sig
   type stack
 
-  val get : stack -> request -> (Header.t * string, fetch_err) Lwt_result.t
+  val get : stack -> request -> (header * body, fetch_err) result IO.t
 end
 
 module Mirage = struct
@@ -39,7 +42,10 @@ module Mirage = struct
       (Time : Mirage_time.S)
       (Mclock : Mirage_clock.MCLOCK)
       (Pclock : Mirage_clock.PCLOCK)
-      (Stack : Tcpip.Stack.V4V6) : IO with type stack = Stack.t = struct
+      (Stack : Tcpip.Stack.V4V6) :
+    NET with module IO = Lwt and type stack = Stack.t = struct
+    module IO = Lwt
+
     type stack = Stack.t
 
     include Client_impl.Make (Random) (Time) (Mclock) (Pclock) (Stack)
