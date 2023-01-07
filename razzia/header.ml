@@ -2,8 +2,7 @@ type t = { status : Status.t; meta : string }
 type parse_err = [ `InvalidCode | `Malformed | `TooLong ]
 
 let re =
-  Re.compile
-    Re.(seq [ group (seq [ digit; digit ]); char ' '; group (rep any) ])
+  Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
 
 let parse head : (t, parse_err) result =
   match Re.exec_opt re head with

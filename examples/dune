@@ -1,4 +1,11 @@
 (executables
- (names main)
- (libraries lwt razzia razzia.unix tls.lwt))
-
+ (names client_lwt_unix client_eio)
+ (libraries
+  eio
+  eio_main
+  mirage-crypto-rng-eio
+  lwt
+  razzia
+  razzia.eio
+  razzia.unix
+  tls.lwt))

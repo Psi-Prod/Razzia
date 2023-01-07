@@ -38,11 +38,6 @@ let check_userinfo uri =
   | None -> Ok ()
   | Some _ -> Error `UserInfoNotAllowed
 
-let check_path uri =
-  match Uri.path uri with
-  | "" -> Uri.with_path uri "/" |> Result.ok
-  | _ -> Ok uri
-
 let check_host uri =
   match Uri.host uri with None -> Error `MissingHost | Some h -> Ok h
 
@@ -50,10 +45,9 @@ let make ?(smart_scheme = false) url =
   let* () = check_length url in
   let* () = check_utf8_encoding url in
   let* () = check_bom url in
-  let uri = Uri.of_string url in
+  let uri = Uri.of_string url |> Uri.canonicalize in
   let* uri = chek_scheme smart_scheme uri in
   let* () = check_userinfo uri in
-  let* uri = check_path uri in
   let* host = check_host uri in
   let port = Uri.port uri |> Option.value ~default:1965 in
   Ok { host; port; uri }

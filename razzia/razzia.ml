@@ -33,8 +33,12 @@ let pp_fetch_err fmt = function
 
 let pp_header = Header.pp
 
+module type IO = sig
+  type 'a t
+end
+
 module type NET = sig
-  module IO : Types.IO
+  module IO : IO
 
   type stack
 
