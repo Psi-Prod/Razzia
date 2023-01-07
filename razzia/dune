@@ -1,13 +1,4 @@
 (library
  (public_name razzia)
  (name razzia)
- (libraries
-  dns-client.mirage
-  mirage-channel
-  mirage-random
-  mirage-time
-  tls
-  tls-mirage
-  uri
-  re
-  tcpip))
+ (libraries uri re))

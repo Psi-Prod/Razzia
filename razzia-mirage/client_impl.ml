@@ -13,8 +13,8 @@ struct
   let net_err = Lwt.return_error `NetErr
 
   let write_request flow req =
-    Format.asprintf "%a" Request.pp req |> Cstruct.of_string
-    |> TLS.write flow
+    Format.asprintf "%a" Razzia.pp_request req
+    |> Cstruct.of_string |> TLS.write flow
 
   let read flow =
     TLS.read flow >>= function Ok v -> Lwt.return_ok v | Error _ -> net_err
@@ -51,7 +51,7 @@ struct
     in
     parse 0 false >>= function
     | Ok h -> (
-        match Header.parse h with
+        match Razzia.parse_header h with
         | Ok h -> Lwt.return_ok h
         | Error err -> Lwt.return_error (`Header err))
     | Error `Malformed -> Lwt.return_error (`Header `Malformed)
@@ -67,8 +67,8 @@ struct
 
   let get stack req =
     let dns = DNS.create stack in
-    let* addr = resolve dns (Request.host req) in
-    Stack.TCP.create_connection (Stack.tcp stack) (addr, Request.port req)
+    let* addr = resolve dns (Razzia.host req) in
+    Stack.TCP.create_connection (Stack.tcp stack) (addr, Razzia.port req)
     >>= function
     | Ok flow -> (
         TLS.client_of_flow

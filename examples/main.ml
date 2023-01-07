@@ -8,7 +8,7 @@ let main () =
     | Ok req -> (
         Razzia_unix.get req >>= function
         | Ok (header, body) ->
-            Lwt_fmt.printf "%a\n%s" Razzia.pp_header header body
+            Lwt_fmt.printf "%a%s" Razzia.pp_header header body
         | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_fetch_err err)
     | Error err -> Lwt_fmt.printf "Request error: %a" Razzia.pp_request_err err
   in
