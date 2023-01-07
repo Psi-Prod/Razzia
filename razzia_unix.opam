@@ -4,7 +4,7 @@ version: "0.1"
 synopsis: "Razzia implementation for Unix and Windows using Lwt"
 maintainer: ["tim.arnouts@protonmail.com" "lelolartichaut@laposte.net"]
 authors: ["The razzia programmers"]
-license: "GPL-3.0"
+license: "LGPL-3.0"
 homepage: "https://github.com/Psi-Prod/Razzia"
 bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
@@ -14,7 +14,6 @@ depends: [
   "mirage-random" {>= "3.0.0"}
   "mirage-random-stdlib" {>= "0.1.0"}
   "mirage-time-unix" {>= "3.0.0"}
-  "tcpip" {>= "7.1.2"}
   "odoc" {with-doc}
 ]
 build: [

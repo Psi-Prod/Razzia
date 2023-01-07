@@ -25,7 +25,7 @@
   (dune
    (>= 3.0))
   (ocaml
-   (>= 4.14)))
+   (>= 4.14))))
 
 (package
  (name razzia_mirage)
@@ -58,4 +58,4 @@
   (mirage-random-stdlib
    (>= 0.1.0))
   (mirage-time-unix
-   (>= 3.0.0)))
+   (>= 3.0.0))))
