@@ -1,3 +1,3 @@
 # Razzia
 
-A Mirage OS friendly Gemini client library
+A cross-platform Gemini client library.
