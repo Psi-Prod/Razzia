@@ -24,10 +24,12 @@ let get net req =
       let+ host = Domain_name.host dn in
       let client = Tls_eio.client_of_flow tls_config ~host flow in
       Flow.copy_string (Format.asprintf "%a" Razzia.pp_request req) client;
-      let header_raw, body =
-        (Buf_read.pair header Buf_read.take_all)
-          (Buf_read.of_flow client ~max_size:Sys.max_string_length)
-      in
-      match Razzia.parse_header header_raw with
-      | Ok header -> Ok (header, body)
-      | Error err -> Error (`Header err))
+      let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
+      try
+        let header_raw, body = Buf_read.pair header Buf_read.take_all buf in
+        match Razzia.parse_header header_raw with
+        | Ok header -> Ok (header, body)
+        | Error err -> Error (`Header err)
+      with
+      | Failure _ -> Error (`Header `Malformed)
+      | End_of_file -> Error `NetErr)
