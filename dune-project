@@ -25,11 +25,7 @@
   (dune
    (>= 3.0))
   (ocaml
-   (>= 4.14))
-  (re
-   (>= 1.10.4))
-  (uri
-   (>= 4.2.0))))
+   (>= 4.14)))
 
 (package
  (name razzia_mirage)
@@ -54,6 +50,7 @@
  (synopsis "Razzia implementation for Unix and Windows using Lwt")
  (depends
   razzia
+
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-random
@@ -61,6 +58,4 @@
   (mirage-random-stdlib
    (>= 0.1.0))
   (mirage-time-unix
-   (>= 3.0.0))
-  (tcpip
-   (>= 7.1.2))))
+   (>= 3.0.0)))
