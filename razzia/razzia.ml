@@ -1,3 +1,5 @@
+module Gemtext = Gemtext
+
 type request = Request.t
 type request_err = Request.err
 
@@ -9,7 +11,7 @@ let pp_request_err = Request.pp_err
 
 type response = Response.t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of { mime : string; body : string }
+  | Sucess of { mime : Mime.t; body : string }
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]

@@ -1,6 +1,6 @@
 type t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of { mime : mime; body : body }
+  | Sucess of { mime : Mime.t; body : body }
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
@@ -17,7 +17,7 @@ type err = [ `InvalidCode | `Malformed | `TooLong ]
 let from_int meta body = function
   | 10 -> Some (Input { sensitive = false; prompt = meta })
   | 11 -> Some (Input { sensitive = true; prompt = meta })
-  | 20 -> Some (Sucess { mime = meta; body })
+  | 20 -> Some (Sucess { mime = Mime.from_string meta; body })
   | 30 -> Some (Redirect (`Temp, meta))
   | 31 -> Some (Redirect (`Perm, meta))
   | 40 -> Some (TempFailure (`Msg, meta))

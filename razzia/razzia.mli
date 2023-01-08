@@ -1,3 +1,7 @@
+(* {1 Gemtext} *)
+
+module Gemtext = Gemtext
+
 (** {1 Request} *)
 
 type request
