@@ -6,6 +6,6 @@
   mirage-crypto-rng-eio
   lwt
   razzia
-  razzia.eio
-  razzia.unix
+  razzia-eio
+  razzia-unix
   tls.lwt))

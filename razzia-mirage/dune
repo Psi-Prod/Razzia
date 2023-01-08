@@ -1,6 +1,6 @@
 (library
  (name razzia_mirage)
- (public_name razzia.mirage)
+ (public_name razzia-mirage)
  (libraries
   dns-client.mirage
   mirage-channel

@@ -28,8 +28,8 @@
    (>= 4.14))))
 
 (package
- (name razzia_mirage)
- (synopsis "Razzia implementation for Unix and Windows using Lwt")
+ (name razzia-mirage)
+ (synopsis "Razzia IO implementation for MirageOS")
  (depends
   razzia
   (dns-client
@@ -46,11 +46,10 @@
    (>= 0.15.4))))
 
 (package
- (name razzia_unix)
- (synopsis "Razzia implementation for Unix and Windows using Lwt")
+ (name razzia-unix)
+ (synopsis "Razzia IO implementation using UNIX bindings")
  (depends
   razzia
-
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-random
@@ -59,3 +58,13 @@
    (>= 0.1.0))
   (mirage-time-unix
    (>= 3.0.0))))
+
+(package
+ (name razzia-eio)
+ (synopsis "Razzia IO implementation using Eio")
+ (depends
+  razzia
+  (eio
+   (>= 0.6))
+  (tls-eio
+   (>= 0.15.5))))
