@@ -1,5 +1,5 @@
 let main net =
-  (match Razzia.make_request "gemini://gemini.circumlunar.space/" with
+  (match Razzia.make_request "gemini://heyplzlookat.me/" with
   | Ok req -> (
       match Razzia_eio.get net req with
       | Ok resp -> Format.printf "%a" Razzia.pp_response resp

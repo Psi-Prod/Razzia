@@ -7,7 +7,17 @@ let port = Request.port
 let pp_request = Request.pp
 let pp_request_err = Request.pp_err
 
-type response = Response.t
+type response = Response.t =
+  | Input of { sensitive : bool; prompt : string }
+  | Sucess of { mime : string; body : string }
+  | Redirect of [ `Temp | `Perm ] * string
+  | TempFailure of
+      [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
+      * string
+  | PermFailure of
+      [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
+  | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
+
 type response_err = Response.err
 
 let of_raw = Response.of_raw

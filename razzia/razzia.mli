@@ -19,7 +19,17 @@ val pp_request_err : Format.formatter -> request_err -> unit
 
 (** {1 Response} *)
 
-type response
+type response = Response.t =
+  | Input of { sensitive : bool; prompt : string }
+  | Sucess of { mime : string; body : string }
+  | Redirect of [ `Temp | `Perm ] * string
+  | TempFailure of
+      [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
+      * string
+  | PermFailure of
+      [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
+  | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
+
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 
 val of_raw : header:string -> body:string -> (response, response_err) result
