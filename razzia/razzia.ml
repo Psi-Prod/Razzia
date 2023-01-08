@@ -7,31 +7,29 @@ let port = Request.port
 let pp_request = Request.pp
 let pp_request_err = Request.pp_err
 
-type header = Header.t
-type header_err = Header.parse_err
+type response = Response.t
+type response_err = Response.err
 
-let parse_header = Header.parse
-let pp_header_err = Header.pp_err
+let of_raw = Response.of_raw
+let status_code = Response.status_code
+let pp_response = Response.pp
+let pp_response_err = Response.pp_err
 
-type body = string
-
-type fetch_err =
-  [ `Header of header_err
+type err =
+  [ `Header of response_err
   | `Host of
     [ `BadDomainName of string
     | `InvalidHostname of string
     | `UnknownHost of string ]
   | `NetErr ]
 
-let pp_fetch_err fmt = function
-  | `Header h -> Format.fprintf fmt "Header:@ %a" Header.pp_err h
+let pp_err fmt = function
+  | `Header h -> Format.fprintf fmt "Header:@ %a" Response.pp_err h
   | `Host (`BadDomainName dn) -> Format.fprintf fmt "Host:@ BadDomainName %S" dn
   | `Host (`InvalidHostname h) ->
       Format.fprintf fmt "Host:@ InvalidHostname %S" h
   | `Host (`UnknownHost h) -> Format.fprintf fmt "Host:@ UnknownHost %S" h
   | `NetErr -> Format.fprintf fmt "NetErr"
-
-let pp_header = Header.pp
 
 module type IO = sig
   type 'a t
@@ -42,5 +40,5 @@ module type NET = sig
 
   type stack
 
-  val get : stack -> request -> (header * body, fetch_err) result IO.t
+  val get : stack -> request -> (response, err) result IO.t
 end

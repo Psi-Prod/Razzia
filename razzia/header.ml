@@ -1,25 +1,22 @@
-type t = { status : Status.t; meta : string }
-type parse_err = [ `InvalidCode | `Malformed | `TooLong ]
+type t = { status : int; meta : string }
+type parse_err = [ `Malformed | `TooLong ]
 
 let re =
   Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
 
-let parse head : (t, parse_err) result =
+let parse head =
   match Re.exec_opt re head with
   | None -> Error `Malformed
-  | Some grp -> (
+  | Some grp ->
       let meta = Re.Group.get grp 2 in
       if Bytes.of_string meta |> Bytes.length > 1024 then Error `TooLong
       else
-        match Re.Group.get grp 1 |> int_of_string |> Status.from_int meta with
-        | None -> Error `InvalidCode
-        | Some status -> Ok { status; meta })
+        let status = Re.Group.get grp 1 |> int_of_string in
+        Ok { status; meta }
 
-let pp fmt { status; meta } = Format.fprintf fmt "%a %s" Status.pp status meta
+let pp fmt { status; meta } =
+  Format.fprintf fmt "{ status = %i; meta = %S }" status meta
 
-let pp_err fmt =
-  let fmt = Format.fprintf fmt in
-  function
-  | `InvalidCode -> fmt "InvalidCode"
-  | `Malformed -> fmt "Malformed"
-  | `TooLong -> fmt "TooLong"
+let pp_err fmt = function
+  | `Malformed -> Format.fprintf fmt "Malformed"
+  | `TooLong -> Format.fprintf fmt "TooLong"

@@ -50,10 +50,7 @@ struct
       else Lwt.return_error `Malformed
     in
     parse 0 false >>= function
-    | Ok h -> (
-        match Razzia.parse_header h with
-        | Ok h -> Lwt.return_ok h
-        | Error err -> Lwt.return_error (`Header err))
+    | Ok _ as ok -> Lwt.return ok
     | Error `Malformed -> Lwt.return_error (`Header `Malformed)
     | Error _ -> net_err
 
@@ -82,9 +79,11 @@ struct
                 read_header chan >>= function
                 | Ok header -> (
                     read_body chan >>= function
-                    | Ok body -> Lwt.return_ok (header, body)
-                    | Error `NetErr -> net_err
-                    | Error `PrematuredEof -> net_err)
+                    | Ok body ->
+                        Razzia.of_raw ~header ~body
+                        |> Result.fold ~ok:Lwt.return_ok ~error:(fun e ->
+                               Lwt.return_error (`Header e))
+                    | Error (`NetErr | `PrematuredEof) -> net_err)
                 | Error err -> Lwt.return_error err)
             | Error _ -> net_err)
         | Error _ -> net_err)
