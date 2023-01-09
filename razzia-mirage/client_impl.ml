@@ -80,7 +80,7 @@ struct
                 | Ok header -> (
                     read_body chan >>= function
                     | Ok body ->
-                        Razzia.of_raw ~header ~body
+                        Razzia.make_response ~header ~body
                         |> Result.fold ~ok:Lwt.return_ok ~error:(fun e ->
                                Lwt.return_error (`Header e))
                     | Error (`NetErr | `PrematuredEof) -> net_err)

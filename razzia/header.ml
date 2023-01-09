@@ -7,12 +7,17 @@ let re =
 let parse head =
   match Re.exec_opt re head with
   | None -> Error `Malformed
-  | Some grp ->
-      let meta = Re.Group.get grp 2 in
-      if Bytes.of_string meta |> Bytes.length > 1024 then Error `TooLong
-      else
-        let status = Re.Group.get grp 1 |> int_of_string in
-        Ok { status; meta }
+  | Some grp -> (
+      match Re.Group.get grp 2 with
+      | s when Bytes.of_string s |> Bytes.length > 1024 -> Error `TooLong
+      | s
+        when String.length s >= 1
+             && String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar
+                <> Uchar.bom ->
+          Error `Malformed
+      | meta ->
+          let status = Re.Group.get grp 1 |> int_of_string in
+          Ok { status; meta })
 
 let pp fmt { status; meta } =
   Format.fprintf fmt "{ status = %i; meta = %S }" status meta

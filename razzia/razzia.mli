@@ -36,7 +36,7 @@ type response = Response.t =
 
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 
-val of_raw : header:string -> body:string -> (response, response_err) result
+val make_response : header:string -> body:string -> (response, response_err) result
 val status_code : response -> int
 val pp_response : Format.formatter -> response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit

@@ -27,7 +27,8 @@ let get net req =
       let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
       try
         let header, body = Buf_read.pair header Buf_read.take_all buf in
-        Razzia.of_raw ~header ~body |> Result.map_error (fun e -> `Header e)
+        Razzia.make_response ~header ~body
+        |> Result.map_error (fun e -> `Header e)
       with
       | Failure _ -> Error (`Header `Malformed)
       | End_of_file -> Error `NetErr)

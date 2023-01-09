@@ -14,10 +14,10 @@ and body = string
 
 type err = [ `InvalidCode | `Malformed | `TooLong ]
 
-let from_int meta body = function
+let of_int meta body = function
   | 10 -> Some (Input { sensitive = false; prompt = meta })
   | 11 -> Some (Input { sensitive = true; prompt = meta })
-  | 20 -> Some (Sucess { mime = Mime.from_string meta; body })
+  | 20 -> Some (Sucess { mime = Mime.of_string meta; body })
   | 30 -> Some (Redirect (`Temp, meta))
   | 31 -> Some (Redirect (`Perm, meta))
   | 40 -> Some (TempFailure (`Msg, meta))
@@ -55,10 +55,10 @@ let status_code = function
   | ClientCertReq (`CertNotAuth, _) -> 61
   | ClientCertReq (`CertNotValid, _) -> 62
 
-let of_raw ~header ~body =
+let make ~header ~body =
   match Header.parse header with
   | Ok { status; meta } -> (
-      match from_int meta body status with
+      match of_int meta body status with
       | None -> Error `InvalidCode
       | Some resp -> Ok resp)
   | Error _ as err -> err

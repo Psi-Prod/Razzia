@@ -19,7 +19,7 @@ let re =
 
 let encoding = function "UTF-8" | "utf-8" -> `UTF8 | e -> `Other e
 
-(* let from_string = function
+(* let of_string = function
    | "" -> Gemini { encoding = Some `UTF8; lang = None }
    | s -> (
        match Re.exec_opt re s with
@@ -29,4 +29,4 @@ let encoding = function "UTF-8" | "utf-8" -> `UTF8 | e -> `Other e
        | Some grp ->
            Other
              (Re.Group.get grp 1, Re.Group.get_opt grp 2 |> Option.map encoding)) *)
-let from_string s = s
+let of_string s = s

@@ -22,7 +22,7 @@ type response = Response.t =
 
 type response_err = Response.err
 
-let of_raw = Response.of_raw
+let make_response = Response.make
 let status_code = Response.status_code
 let pp_response = Response.pp
 let pp_response_err = Response.pp_err
