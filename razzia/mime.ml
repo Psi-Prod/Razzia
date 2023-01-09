@@ -18,4 +18,8 @@ let of_string = function
   | s -> (
       match Re.exec_opt re s with
       | None -> default
-      | Some grp -> (Re.Group.get_opt grp 2, MimeType (Re.Group.get grp 1)))
+      | Some grp -> (
+          match Re.Group.get grp 1 with
+          | "text/gemini" ->
+              (Re.Group.get_opt grp 2, Gemini { lang = Re.Group.get_opt grp 3 })
+          | mime -> (Re.Group.get_opt grp 2, MimeType mime)))

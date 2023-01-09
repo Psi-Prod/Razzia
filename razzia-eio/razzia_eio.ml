@@ -4,8 +4,6 @@ end
 
 open Eio
 
-type stream = string
-
 let tls_config =
   Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _certs -> Ok None) ()
 
@@ -34,3 +32,5 @@ let get net req =
       with
       | Failure _ -> Error (`Header `Malformed)
       | End_of_file -> Error `NetErr)
+
+let single_read s = s

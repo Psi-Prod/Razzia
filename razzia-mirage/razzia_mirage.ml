@@ -74,6 +74,7 @@ module Make
     | Error _ -> net_err
 
   let ( let* ) = Lwt_result.bind
+  let single_read s = s
 
   let get stack req =
     let dns = DNS.create stack in

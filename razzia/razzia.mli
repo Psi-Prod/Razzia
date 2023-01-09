@@ -81,5 +81,6 @@ module type NET = sig
   type stack
   type stream
 
+  val single_read : stream -> string
   val get : stack -> request -> (stream response, err) result IO.t
 end

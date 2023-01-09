@@ -1,6 +1,4 @@
-type absurd = |
-
-include Razzia_mirage.S with type stack := absurd
+include Razzia_mirage.S with type stack := unit
 
 val get :
   ?v4:Ipaddr.V4.Prefix.t ->

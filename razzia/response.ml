@@ -103,7 +103,7 @@ let pp_body fmt = function
         (Option.value ~default:"None" encoding)
         (Option.value ~default:"None" lang)
   | Other { encoding; mime; _ } ->
-      Format.fprintf fmt "Gemtext { encoding = %S; mime = %S; body = ... }"
+      Format.fprintf fmt "Other { encoding = %S; mime = %S; body = ... }"
         (Option.value ~default:"None" encoding)
         mime
 

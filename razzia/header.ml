@@ -5,7 +5,6 @@ let re =
   Re.compile Re.(seq [ group (seq [ digit; digit ]); space; group (rep any) ])
 
 let parse head =
-  print_endline head;
   match Re.exec_opt re head with
   | None -> Error `Malformed
   | Some grp -> (
@@ -13,8 +12,8 @@ let parse head =
       | s when Bytes.of_string s |> Bytes.length > 1024 -> Error `TooLong
       | s
         when String.length s >= 1
-             && String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar
-                = Uchar.bom ->
+             && String.get_utf_8_uchar s 0 |> Uchar.utf_decode_uchar = Uchar.bom
+        ->
           Error `Malformed
       | meta ->
           let status = Re.Group.get grp 1 |> int_of_string in
