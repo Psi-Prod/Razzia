@@ -27,11 +27,8 @@ let check_bom url =
   then Error `BeginWithBOM
   else Ok ()
 
-let chek_scheme smart uri =
-  match Uri.scheme uri with
-  | None when smart -> Uri.with_scheme uri (Some "gemini://") |> Result.ok
-  | None -> Error `MissingScheme
-  | Some _ -> Ok uri
+let chek_scheme uri =
+  match Uri.scheme uri with None -> Error `MissingScheme | Some _ -> Ok uri
 
 let check_userinfo uri =
   match Uri.userinfo uri with
@@ -41,17 +38,27 @@ let check_userinfo uri =
 let check_host uri =
   match Uri.host uri with None -> Error `MissingHost | Some h -> Ok h
 
-let make ?(smart_scheme = false) url =
+let make ?(default_scheme = "gemini") ?query url =
   let* () = check_length url in
   let* () = check_utf8_encoding url in
   let* () = check_bom url in
   let uri = Uri.of_string url |> Uri.canonicalize in
-  let* uri = chek_scheme smart_scheme uri in
+  let uri =
+    Option.fold query ~none:uri ~some:(fun v -> Uri.with_query uri [ (v, []) ])
+  in
+  let uri =
+    match Uri.scheme uri with
+    | None ->
+        Format.asprintf "%s://%a" default_scheme Uri.pp uri |> Uri.of_string
+    | Some _ -> uri
+  in
+  let* uri = chek_scheme uri in
   let* () = check_userinfo uri in
   let* host = check_host uri in
   let port = Uri.port uri |> Option.value ~default:1965 in
   Ok { host; port; uri }
 
+let target t = t.uri
 let host t = t.host
 let port t = t.port
 let pp fmt { uri; _ } = Format.fprintf fmt "%a\r\n" Uri.pp uri

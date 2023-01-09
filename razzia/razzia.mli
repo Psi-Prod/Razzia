@@ -15,9 +15,15 @@ type request_err =
   | `MissingScheme
   | `UserInfoNotAllowed ]
 
-val make_request : ?smart_scheme:bool -> string -> (request, request_err) result
+val make_request :
+  ?default_scheme:string ->
+  ?query:string ->
+  string ->
+  (request, request_err) result
+
 val host : request -> string
 val port : request -> int
+val target : request -> Uri.t
 val pp_request : Format.formatter -> request -> unit
 val pp_request_err : Format.formatter -> request_err -> unit
 
@@ -36,7 +42,9 @@ type response = Response.t =
 
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 
-val make_response : header:string -> body:string -> (response, response_err) result
+val make_response :
+  header:string -> body:string -> (response, response_err) result
+
 val status_code : response -> int
 val pp_response : Format.formatter -> response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit
