@@ -4,6 +4,7 @@
  (libraries
   dns-client.mirage
   mirage-channel
+  mirage-crypto-rng.unix
   mirage-random
   mirage-time
   razzia

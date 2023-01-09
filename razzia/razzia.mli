@@ -29,9 +29,9 @@ val pp_request_err : Format.formatter -> request_err -> unit
 
 (** {1 Response} *)
 
-type response = Response.t =
+type 'stream response = 'stream Response.t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of { mime : string; body : string }
+  | Sucess of 'stream body
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
@@ -40,13 +40,21 @@ type response = Response.t =
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
 
+and 'stream body = 'stream Response.body =
+  | Gemtext of {
+      encoding : string option;
+      lang : string option;
+      body : 'stream;
+    }
+  | Other of { encoding : string option; mime : string; body : 'stream }
+
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 
 val make_response :
-  header:string -> body:string -> (response, response_err) result
+  header:string -> body:'a -> ('a response, response_err) result
 
-val status_code : response -> int
-val pp_response : Format.formatter -> response -> unit
+val status_code : 'a response -> int
+val pp_response : Format.formatter -> 'a response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit
 
 (** {1 Error} *)
@@ -71,6 +79,7 @@ module type NET = sig
   module IO : IO
 
   type stack
+  type stream
 
-  val get : stack -> request -> (response, err) result IO.t
+  val get : stack -> request -> (stream response, err) result IO.t
 end

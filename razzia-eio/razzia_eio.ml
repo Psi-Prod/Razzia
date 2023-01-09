@@ -4,6 +4,8 @@ end
 
 open Eio
 
+type stream = string
+
 let tls_config =
   Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _certs -> Ok None) ()
 

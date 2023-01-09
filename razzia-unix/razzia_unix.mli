@@ -1,7 +1,9 @@
-include Razzia.NET with module IO = Lwt
+type absurd = |
+
+include Razzia_mirage.S with type stack := absurd
 
 val get :
   ?v4:Ipaddr.V4.Prefix.t ->
   ?v6:Ipaddr.V6.Prefix.t ->
   Razzia.request ->
-  (Razzia.response, Razzia.err) result Lwt.t
+  (stream Razzia.response, Razzia.err) result Lwt.t

@@ -1,6 +1,6 @@
-type t =
+type 'stream t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of { mime : Mime.t; body : body }
+  | Sucess of 'stream body
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
@@ -9,15 +9,26 @@ type t =
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
 
-and mime = string
-and body = string
+and 'stream body =
+  | Gemtext of {
+      encoding : string option;
+      lang : string option;
+      body : 'stream;
+    }
+  | Other of { encoding : string option; mime : string; body : 'stream }
 
 type err = [ `InvalidCode | `Malformed | `TooLong ]
 
 let of_int meta body = function
   | 10 -> Some (Input { sensitive = false; prompt = meta })
   | 11 -> Some (Input { sensitive = true; prompt = meta })
-  | 20 -> Some (Sucess { mime = Mime.of_string meta; body })
+  | 20 ->
+      let body =
+        match Mime.of_string meta with
+        | encoding, Gemini { lang } -> Gemtext { encoding; lang; body }
+        | encoding, MimeType mime -> Other { encoding; mime; body }
+      in
+      Some (Sucess body)
   | 30 -> Some (Redirect (`Temp, meta))
   | 31 -> Some (Redirect (`Perm, meta))
   | 40 -> Some (TempFailure (`Msg, meta))
@@ -86,12 +97,21 @@ let pp_client_cert fmt = function
   | `CertNotAuth -> Format.fprintf fmt "`CertNotAuth"
   | `CertNotValid -> Format.fprintf fmt "`CertNotValid"
 
+let pp_body fmt = function
+  | Gemtext { encoding; lang; _ } ->
+      Format.fprintf fmt "Gemtext { encoding = %S; lang = %S; body = ... }"
+        (Option.value ~default:"None" encoding)
+        (Option.value ~default:"None" lang)
+  | Other { encoding; mime; _ } ->
+      Format.fprintf fmt "Gemtext { encoding = %S; mime = %S; body = ... }"
+        (Option.value ~default:"None" encoding)
+        mime
+
 let pp fmt = function
   | Input { sensitive; prompt } ->
       Format.fprintf fmt "Input { sensitive = %B; prompt = %S }" sensitive
         prompt
-  | Sucess { mime; body } ->
-      Format.fprintf fmt "Sucess { mime = %S; body = %S }" mime body
+  | Sucess body -> Format.fprintf fmt "Sucess (%a)" pp_body body
   | Redirect (r, msg) ->
       Format.fprintf fmt "Redirect (%a, %S)" pp_redirect r msg
   | TempFailure (f, msg) ->

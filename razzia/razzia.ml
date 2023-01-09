@@ -10,9 +10,9 @@ let port = Request.port
 let pp_request = Request.pp
 let pp_request_err = Request.pp_err
 
-type response = Response.t =
+type 'stream response = 'stream Response.t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of { mime : Mime.t; body : string }
+  | Sucess of 'stream body
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
@@ -20,6 +20,14 @@ type response = Response.t =
   | PermFailure of
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
+
+and 'stream body = 'stream Response.body =
+  | Gemtext of {
+      encoding : string option;
+      lang : string option;
+      body : 'stream;
+    }
+  | Other of { encoding : string option; mime : string; body : 'stream }
 
 type response_err = Response.err
 
@@ -52,6 +60,7 @@ module type NET = sig
   module IO : IO
 
   type stack
+  type stream
 
-  val get : stack -> request -> (response, err) result IO.t
+  val get : stack -> request -> (stream response, err) result IO.t
 end
