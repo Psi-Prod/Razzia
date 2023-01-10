@@ -58,9 +58,10 @@ let make ?(default_scheme = "gemini") ?query url =
   let port = Uri.port uri |> Option.value ~default:1965 in
   Ok { host; port; uri }
 
-let target t = t.uri
 let host t = t.host
 let port t = t.port
+let target t = t.uri
+let query t = match Uri.query t.uri with [] -> None | (q, _) :: _ -> Some q
 let pp fmt { uri; _ } = Format.fprintf fmt "%a\r\n" Uri.pp uri
 
 let pp_err fmt = function

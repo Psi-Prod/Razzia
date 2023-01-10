@@ -24,6 +24,7 @@ val make_request :
 val host : request -> string
 val port : request -> int
 val target : request -> Uri.t
+val query : request -> string option
 val pp_request : Format.formatter -> request -> unit
 val pp_request_err : Format.formatter -> request_err -> unit
 

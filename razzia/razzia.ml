@@ -4,9 +4,10 @@ type request = Request.t
 type request_err = Request.err
 
 let make_request = Request.make
-let target = Request.target
 let host = Request.host
 let port = Request.port
+let target = Request.target
+let query = Request.query
 let pp_request = Request.pp
 let pp_request_err = Request.pp_err
 
