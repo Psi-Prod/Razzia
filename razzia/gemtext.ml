@@ -36,10 +36,10 @@ let to_string lines =
   |> String.concat "\n"
 
 module Regex = struct
-  let spaces = Re.(rep (alt [ char ' '; char '\t' ]))
+  let space = Re.(alt [ char ' '; char '\t' ])
 
   let line prefix =
-    Re.compile Re.(seq [ bol; prefix; spaces; group (rep1 any) ])
+    Re.compile Re.(seq [ bol; prefix; rep space; group (rep1 any) ])
 
   let h1 = line (Re.char '#')
   let h2 = line (Re.str "##")
@@ -53,9 +53,9 @@ module Regex = struct
         seq
           [
             str "=>";
-            spaces;
+            rep1 space;
             group (rep1 (compl [ space ]));
-            opt (seq [ spaces; group (rep1 any) ]);
+            opt (seq [ rep space; group (rep1 any) ]);
           ])
 end
 
@@ -71,8 +71,7 @@ let of_string text =
             let alt_str = String.sub x 3 (String.length x - 3) in
             let alt = if alt_str = "" then None else Some alt_str in
             loop acc (not is_preformat) { pf with alt } xs
-        | false, true ->
-            loop acc is_preformat { pf with text = pf.text ^ x ^ "\n" } xs
+        | false, true -> loop acc is_preformat { pf with text = pf.text ^ x } xs
         | false, false ->
             let frgmt =
               if x = "" then Text ""
@@ -105,5 +104,30 @@ let of_string text =
   in
   Re.(split (compile (alt [ char '\n'; str "\r\n" ]))) text
   |> loop [] false { alt = None; text = "" }
+
+let paragraph gemtext str =
+  let doc = ref [] in
+  let cr = ref false in
+  let buf = Buffer.create 4096 in
+  for i = 0 to String.length str - 1 do
+    match String.unsafe_get str i with
+    | '\r' -> cr := true
+    | '\n' when !cr ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | '\n' ->
+        let line = Buffer.contents buf in
+        Buffer.reset buf;
+        doc := gemtext line :: !doc;
+        cr := false
+    | c ->
+        if !cr then Buffer.add_char buf '\r';
+        Buffer.add_char buf c;
+        cr := false
+  done;
+  (match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc)
+  |> List.rev
 
 let pp fmt g = Format.fprintf fmt "%s" (to_string g)
