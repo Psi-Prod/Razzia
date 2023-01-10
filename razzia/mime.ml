@@ -6,7 +6,7 @@ let re =
     compile
       (seq
          [
-           group (rep1 (compl [ char ' ' ]));
+           group (rep1 (compl [ char ' '; char ';' ]));
            opt (seq [ space; char ';'; str "charset="; group (rep1 any) ]);
            opt (seq [ space; char ';'; str "lang="; group (rep1 any) ]);
          ]))
