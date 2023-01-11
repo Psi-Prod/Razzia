@@ -53,81 +53,101 @@ module Regex = struct
         seq
           [
             str "=>";
-            rep1 space;
+            rep space;
             group (rep1 (compl [ space ]));
             opt (seq [ rep space; group (rep1 any) ]);
           ])
 end
 
-let of_string text =
-  let rec loop acc is_preformat pf = function
-    | [] -> List.rev acc
-    | x :: xs -> (
-        match (String.starts_with ~prefix:"```" x, is_preformat) with
-        | true, true ->
-            loop (Preformat pf :: acc) (not is_preformat)
-              { alt = None; text = "" } xs
-        | true, false ->
-            let alt_str = String.sub x 3 (String.length x - 3) in
-            let alt = if alt_str = "" then None else Some alt_str in
-            loop acc (not is_preformat) { pf with alt } xs
-        | false, true -> loop acc is_preformat { pf with text = pf.text ^ x } xs
-        | false, false ->
-            let frgmt =
-              if x = "" then Text ""
-              else
-                match Re.exec_opt Regex.h3 x with
-                | Some grp -> Heading (`H3, Re.Group.get grp 1)
-                | None -> (
-                    match Re.exec_opt Regex.h2 x with
-                    | Some grp -> Heading (`H2, Re.Group.get grp 1)
-                    | None -> (
-                        match Re.exec_opt Regex.h1 x with
-                        | Some grp -> Heading (`H1, Re.Group.get grp 1)
-                        | None -> (
-                            match Re.exec_opt Regex.item x with
-                            | Some grp -> ListItem (Re.Group.get grp 1)
-                            | None -> (
-                                match Re.exec_opt Regex.quote x with
-                                | Some grp -> Quote (Re.Group.get grp 1)
-                                | None -> (
-                                    match Re.exec_opt Regex.link x with
-                                    | None -> Text x
-                                    | Some grp ->
-                                        let url, name =
-                                          ( Re.Group.get grp 1,
-                                            Re.Group.get_opt grp 2 )
-                                        in
-                                        Link { url; name })))))
-            in
-            loop (frgmt :: acc) is_preformat pf xs)
-  in
-  Re.(split (compile (alt [ char '\n'; str "\r\n" ]))) text
-  |> loop [] false { alt = None; text = "" }
+type line_feed = LF | CRLF | EOF
 
-let paragraph gemtext str =
-  let doc = ref [] in
-  let cr = ref false in
-  let buf = Buffer.create 4096 in
-  for i = 0 to String.length str - 1 do
-    match String.unsafe_get str i with
-    | '\r' -> cr := true
-    | '\n' when !cr ->
-        let line = Buffer.contents buf in
-        Buffer.reset buf;
-        doc := gemtext line :: !doc;
-        cr := false
-    | '\n' ->
-        let line = Buffer.contents buf in
-        Buffer.reset buf;
-        doc := gemtext line :: !doc;
-        cr := false
-    | c ->
-        if !cr then Buffer.add_char buf '\r';
-        Buffer.add_char buf c;
-        cr := false
-  done;
-  (match Buffer.contents buf with "" -> !doc | line -> gemtext line :: !doc)
-  |> List.rev
+(* Preserve line feed information for pre-formatted blocks. *)
+let show = function LF -> "\n" | CRLF -> "\r\n" | EOF -> ""
+
+(* Ugly but only one traversal. *)
+let map_lines f text =
+  let buf = Buffer.create 8192 in
+  let len = String.length text - 1 in
+  let rec loop n acc cr is_preformat alt =
+    let n = n + 1 in
+    if n > len then (
+      if cr then Buffer.add_char buf '\r';
+      let line, _, _ = f (Buffer.contents buf) EOF is_preformat alt in
+      Option.fold line ~none:acc ~some:(fun l -> l :: acc))
+    else
+      match String.unsafe_get text n with
+      | '\r' -> loop n acc true is_preformat alt
+      | '\n' when cr ->
+          let content = Buffer.contents buf in
+          Buffer.reset buf;
+          let line, is_preformat, alt = f content CRLF is_preformat alt in
+          loop n
+            (Option.fold line ~none:acc ~some:(fun l -> l :: acc))
+            false is_preformat alt
+      | '\n' ->
+          let content = Buffer.contents buf in
+          Buffer.reset buf;
+          let line, is_preformat, alt = f content LF is_preformat alt in
+          loop n
+            (Option.fold line ~none:acc ~some:(fun l -> l :: acc))
+            false is_preformat alt
+      | c when cr ->
+          Buffer.add_char buf '\r';
+          Buffer.add_char buf c;
+          loop n acc false is_preformat alt
+      | c ->
+          Buffer.add_char buf c;
+          loop n acc false is_preformat alt
+  in
+  loop (-1) [] false false None
+
+let of_string =
+  let pf_buf = Buffer.create 4096 in
+  map_lines (fun l feed is_preformat alt ->
+      match (String.starts_with ~prefix:"```" l, is_preformat) with
+      | true, true ->
+          let text = Buffer.contents pf_buf in
+          Buffer.reset pf_buf;
+          (Some (Preformat { alt; text }), false, None)
+      | true, false ->
+          let alt =
+            match String.sub l 3 (String.length l - 3) with
+            | "" -> None
+            | alt -> Some alt
+          in
+          (None, true, alt)
+      | false, true ->
+          Buffer.add_string pf_buf l;
+          Buffer.add_string pf_buf (show feed);
+          (None, is_preformat, alt)
+      | false, false ->
+          let frgmt =
+            if l = "" then Text ""
+            else
+              match Re.exec_opt Regex.h3 l with
+              | Some grp -> Heading (`H3, Re.Group.get grp 1)
+              | None -> (
+                  match Re.exec_opt Regex.h2 l with
+                  | Some grp -> Heading (`H2, Re.Group.get grp 1)
+                  | None -> (
+                      match Re.exec_opt Regex.h1 l with
+                      | Some grp -> Heading (`H1, Re.Group.get grp 1)
+                      | None -> (
+                          match Re.exec_opt Regex.item l with
+                          | Some grp -> ListItem (Re.Group.get grp 1)
+                          | None -> (
+                              match Re.exec_opt Regex.quote l with
+                              | Some grp -> Quote (Re.Group.get grp 1)
+                              | None -> (
+                                  match Re.exec_opt Regex.link l with
+                                  | None -> Text l
+                                  | Some grp ->
+                                      let url, name =
+                                        ( Re.Group.get grp 1,
+                                          Re.Group.get_opt grp 2 )
+                                      in
+                                      Link { url; name })))))
+          in
+          (Some frgmt, is_preformat, alt))
 
 let pp fmt g = Format.fprintf fmt "%s" (to_string g)

@@ -1,5 +1,5 @@
 let main net =
-  (match Razzia.make_request "gemini://heyplzlookat.me/" with
+  (match Razzia.make_request "heyplzlookat.me/" with
   | Ok req -> (
       match Razzia_eio.get net req with
       | Ok (Sucess (Gemtext { body; _ } | Other { body; _ })) ->
