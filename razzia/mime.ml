@@ -32,16 +32,16 @@ let pp_mime fmt =
   let open Format in
   function
   | Gemtext { lang } ->
-      fprintf fmt "Gemtext { lang = %a }"
+      fprintf fmt "Gemtext@ {@ lang@ =@ %a@ }"
         (pp_print_option
            ~none:(fun fmt () -> Format.fprintf fmt "None")
            pp_print_string)
         lang
-  | MimeType mime -> fprintf fmt "MimeType %S" mime
+  | MimeType mime -> fprintf fmt "MimeType@ %S" mime
 
 let pp fmt { encoding; mime } =
   let open Format in
-  fprintf fmt "{ encoding = %a; mime = %a }"
+  fprintf fmt "{@ encoding@ =@ %a;@ mime@ =@ %a@ }"
     (pp_print_option
        ~none:(fun fmt () -> Format.fprintf fmt "None")
        pp_print_string)

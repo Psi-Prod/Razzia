@@ -89,18 +89,18 @@ let pp_client_cert fmt = function
 
 let pp fmt = function
   | Input { sensitive; prompt } ->
-      Format.fprintf fmt "Input { sensitive = %B; prompt = %S }" sensitive
+      Format.fprintf fmt "Input@ {@ sensitive@ =@ %B;@ prompt@ =@ %S@ }" sensitive
         prompt
   | Sucess { mime; _ } ->
-      Format.fprintf fmt "Sucess { mime = %a; body = ... }" Mime.pp mime
+      Format.fprintf fmt "Sucess@ {@ mime@ =@ %a;@ body@ =@ ...@ }" Mime.pp mime
   | Redirect (r, msg) ->
-      Format.fprintf fmt "Redirect (%a, %S)" pp_redirect r msg
+      Format.fprintf fmt "Redirect@ (%a,@ %S)" pp_redirect r msg
   | TempFailure (f, msg) ->
-      Format.fprintf fmt "TempFailure (%a, %S)" pp_temp_failure f msg
+      Format.fprintf fmt "TempFailure@ (%a,@ %S)" pp_temp_failure f msg
   | PermFailure (f, msg) ->
-      Format.fprintf fmt "PermFailure (%a, %S)" pp_perm_failure f msg
+      Format.fprintf fmt "PermFailure@ (%a,@ %S)" pp_perm_failure f msg
   | ClientCertReq (c, msg) ->
-      Format.fprintf fmt "ClientCertReq (%a, %S)" pp_client_cert c msg
+      Format.fprintf fmt "ClientCertReq@ (%a,@ %S)" pp_client_cert c msg
 
 let pp_err fmt = function
   | `InvalidCode -> Format.fprintf fmt "InvalidCode"
