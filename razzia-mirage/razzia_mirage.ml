@@ -40,10 +40,13 @@ module Make
         | Ok dn -> (
             match Domain_name.host dn with
             | Ok h -> (
-                DNS.gethostbyname6 dns h >>= function
-                | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
-                | Error (`Msg msg) ->
-                    `Host (`UnknownHost msg) |> Lwt.return_error)
+                DNS.gethostbyname dns h >>= function
+                | Ok addr -> Lwt.return_ok (Ipaddr.V4 addr)
+                | Error _ -> (
+                    DNS.gethostbyname6 dns h >>= function
+                    | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
+                    | Error (`Msg msg) ->
+                        `Host (`UnknownHost msg) |> Lwt.return_error))
             | Error (`Msg msg) ->
                 `Host (`InvalidHostname msg) |> Lwt.return_error)
         | Error (`Msg msg) -> `Host (`BadDomainName msg) |> Lwt.return_error)
