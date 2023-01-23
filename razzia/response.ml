@@ -9,7 +9,7 @@ type 'stream t =
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
 
-and 'stream body = { mime : Mime.t; body : 'stream }
+and 'stream body = { encoding : string option; mime : Mime.t; body : 'stream }
 
 type err = [ `InvalidCode | `Malformed | `TooLong ]
 
@@ -17,7 +17,8 @@ let of_int meta body = function
   | 10 -> Some (Input { sensitive = false; prompt = meta })
   | 11 -> Some (Input { sensitive = true; prompt = meta })
   | 20 ->
-      let body = { mime = Mime.of_string meta; body } in
+      let ({ encoding; mime } : Mime.t') = Mime.of_string meta in
+      let body = { encoding; mime; body } in
       Some (Sucess body)
   | 30 -> Some (Redirect (`Temp, meta))
   | 31 -> Some (Redirect (`Perm, meta))
@@ -89,10 +90,15 @@ let pp_client_cert fmt = function
 
 let pp fmt = function
   | Input { sensitive; prompt } ->
-      Format.fprintf fmt "Input@ {@ sensitive@ =@ %B;@ prompt@ =@ %S@ }" sensitive
-        prompt
-  | Sucess { mime; _ } ->
-      Format.fprintf fmt "Sucess@ {@ mime@ =@ %a;@ body@ =@ ...@ }" Mime.pp mime
+      Format.fprintf fmt "Input@ {@ sensitive@ =@ %B;@ prompt@ =@ %S@ }"
+        sensitive prompt
+  | Sucess { encoding; mime; _ } ->
+      Format.fprintf fmt
+        "Sucess@ {@ encoding = %a;@ mime@ =@ %a;@ body@ =@ ...@ }"
+        (Format.pp_print_option
+           ~none:(fun fmt () -> Format.pp_print_string fmt "None")
+           Format.pp_print_string)
+        encoding Mime.pp mime
   | Redirect (r, msg) ->
       Format.fprintf fmt "Redirect@ (%a,@ %S)" pp_redirect r msg
   | TempFailure (f, msg) ->

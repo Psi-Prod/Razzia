@@ -1,5 +1,5 @@
-type t = { encoding : string option; mime : mime }
-and mime = Gemtext of { lang : string option } | MimeType of string
+type t = Gemtext of { lang : string option } | MimeType of string
+type t' = { encoding : string option; mime : t }
 
 let re =
   Re.(
@@ -28,7 +28,7 @@ let of_string = function
           | mime -> { encoding = Re.Group.get_opt grp 2; mime = MimeType mime })
       )
 
-let pp_mime fmt =
+let pp fmt =
   let open Format in
   function
   | Gemtext { lang } ->
@@ -38,11 +38,3 @@ let pp_mime fmt =
            pp_print_string)
         lang
   | MimeType mime -> fprintf fmt "MimeType@ %S" mime
-
-let pp fmt { encoding; mime } =
-  let open Format in
-  fprintf fmt "{@ encoding@ =@ %a;@ mime@ =@ %a@ }"
-    (pp_print_option
-       ~none:(fun fmt () -> Format.fprintf fmt "None")
-       pp_print_string)
-    encoding pp_mime mime

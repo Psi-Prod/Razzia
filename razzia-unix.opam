@@ -10,6 +10,7 @@ bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
   "dune" {>= "2.9"}
   "razzia"
+  "razzia-mirage"
   "mirage-clock-unix" {>= "4.2.0"}
   "mirage-random" {>= "3.0.0"}
   "mirage-random-stdlib" {>= "0.1.0"}

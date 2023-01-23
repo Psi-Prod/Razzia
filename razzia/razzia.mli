@@ -30,12 +30,6 @@ val pp_request_err : Format.formatter -> request_err -> unit
 
 (** {1 Response} *)
 
-type mime = Mime.t = { encoding : string option; mime : mime' }
-
-and mime' = Mime.mime =
-  | Gemtext of { lang : string option }
-  | MimeType of string
-
 type 'stream response = 'stream Response.t =
   | Input of { sensitive : bool; prompt : string }
   | Sucess of 'stream body
@@ -47,7 +41,13 @@ type 'stream response = 'stream Response.t =
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
 
-and 'stream body = 'stream Response.body = { mime : mime; body : 'stream }
+and 'stream body = 'stream Response.body = {
+  encoding : string option;
+  mime : mime;
+  body : 'stream;
+}
+
+and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
 
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 

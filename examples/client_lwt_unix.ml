@@ -7,7 +7,7 @@ let main () =
     match Razzia.make_request "gemini://gemini.circumlunar.space/" with
     | Ok req -> (
         Razzia_unix.get req >>= function
-        | Ok (Sucess { mime = { mime = Gemtext _; encoding = _ }; body }) ->
+        | Ok (Sucess { encoding = _; mime = Gemtext _; body }) ->
             Lwt_io.print body
         | Ok resp -> Lwt_fmt.printf "%a" Razzia.pp_response resp
         | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_err err)
