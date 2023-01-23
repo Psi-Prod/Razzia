@@ -50,6 +50,7 @@
  (synopsis "Razzia IO implementation using UNIX bindings")
  (depends
   razzia
+  razzia-mirage
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-random
