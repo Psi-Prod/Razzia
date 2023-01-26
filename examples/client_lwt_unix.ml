@@ -4,7 +4,7 @@ let ( >>= ) = Lwt.( >>= )
 
 let main () =
   let* () =
-    match Razzia.make_request "gemini://gemini.circumlunar.space/" with
+    match Razzia.make_request "gemini://heyplzlookat.me/" with
     | Ok req -> (
         Razzia_unix.get req >>= function
         | Ok (Sucess { encoding = _; mime = Gemtext _; body }) ->
