@@ -2,9 +2,13 @@ open Lwt.Syntax
 
 let ( >>= ) = Lwt.( >>= )
 
+let () =
+  Logs.set_level (Some Warning);
+  Logs.set_reporter (Logs_fmt.reporter ())
+
 let main () =
   let* () =
-    match Razzia.make_request "gemini://heyplzlookat.me/" with
+    match Razzia.make_request "gemini://gemini.circumlunar.space/" with
     | Ok req -> (
         Razzia_unix.get req >>= function
         | Ok (Sucess { encoding = _; mime = Gemtext _; body }) ->

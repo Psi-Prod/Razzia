@@ -5,6 +5,8 @@
   eio_main
   mirage-crypto-rng-eio
   lwt
+  logs
+  logs.fmt
   razzia
   razzia-eio
   razzia-unix
