@@ -1,4 +1,4 @@
 (library
  (public_name razzia)
  (name razzia)
- (libraries uri re))
+ (libraries re uri))

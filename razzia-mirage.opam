@@ -8,8 +8,8 @@ license: "LGPL-3.0"
 homepage: "https://github.com/Psi-Prod/Razzia"
 bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
-  "dune" {>= "2.9"}
-  "razzia"
+  "dune" {>= "3.0"}
+  "razzia" {= "version"}
   "dns-client" {>= "6.4.1"}
   "mirage-channel" {>= "4.1.0"}
   "mirage-random" {>= "3.0.0"}
@@ -27,11 +27,9 @@ build: [
     name
     "-j"
     jobs
-    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
-  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/Psi-Prod/Razzia.git"

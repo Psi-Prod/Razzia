@@ -1,4 +1,4 @@
-(lang dune 2.9)
+(lang dune 3.0)
 
 (version 0.1)
 
@@ -19,19 +19,22 @@
 
 (package
  (name razzia)
- (synopsis "A cross-platform library for building Gemini servers")
- (description "A cross-platform library for building Gemini servers")
+ (synopsis "A cross-platform library for building Gemini client")
+ (description "A cross-platform library for building Gemini client")
  (depends
-  (dune
-   (>= 3.0))
   (ocaml
-   (>= 4.14))))
+   (>= 4.14))
+  (uri
+   (>= 4.2.0))
+  (re
+   (>= 1.10.4))))
 
 (package
  (name razzia-mirage)
  (synopsis "Razzia IO implementation for MirageOS")
  (depends
-  razzia
+  (razzia
+   (= version))
   (dns-client
    (>= 6.4.1))
   (mirage-channel
@@ -49,8 +52,10 @@
  (name razzia-unix)
  (synopsis "Razzia IO implementation using UNIX bindings")
  (depends
-  razzia
-  razzia-mirage
+  (razzia
+   (= version))
+  (razzia-mirage
+   (= version))
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-random
@@ -58,13 +63,16 @@
   (mirage-random-stdlib
    (>= 0.1.0))
   (mirage-time-unix
-   (>= 3.0.0))))
+   (>= 3.0.0))
+  (tcpip
+   (>= 7.1.2))))
 
 (package
  (name razzia-eio)
  (synopsis "Razzia IO implementation using Eio")
  (depends
-  razzia
+  (razzia
+   (= version))
   (eio
    (>= 0.6))
   (tls-eio
