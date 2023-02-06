@@ -15,9 +15,16 @@ let ( let+ ) x f =
   | Error (`Msg msg) -> Error (`Host (`InvalidHostname msg))
   | Ok x -> f x
 
-let header =
-  let crlf = Buf_read.string "\r\n" in
-  Buf_read.(Syntax.(take_while (fun c -> not (Char.equal c '\r')) <* crlf))
+module HeaderParser = Razzia.Private.MakeParser (struct
+  module IO = Direct
+
+  type src = Buf_read.t
+
+  let next buf =
+    match Buf_read.any_char buf with
+    | exception End_of_file -> Some None
+    | c -> Some (Some c)
+end)
 
 let connect ~net (service, host) request =
   Net.with_tcp_connect net ~service ~host (fun flow ->
@@ -27,8 +34,14 @@ let connect ~net (service, host) request =
       Flow.copy_string (Format.asprintf "%a" Razzia.pp_request request) client;
       let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
       try
-        let _header, body = Buf_read.pair header Buf_read.take_all buf in
-        Razzia.Private.make_response ~header:(20, "") ~body |> Result.ok
+        match HeaderParser.parse buf with
+        | Ok (Ok header) when Razzia.Private.is_success header ->
+            let body = Buf_read.take_all buf in
+            Razzia.Private.make_response ~header ~body |> Result.ok
+        | Ok (Ok header) ->
+            Razzia.Private.make_response ~header ~body:"" |> Result.ok
+        | Ok (Error err) -> `Header err |> Result.error
+        | Error _ -> Error `NetErr
       with
       | Failure _ -> Error (`Header `Malformed)
       | End_of_file -> Error `NetErr)
