@@ -9,7 +9,7 @@ homepage: "https://github.com/Psi-Prod/Razzia"
 bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
   "dune" {>= "3.0"}
-  "razzia" {= "version"}
+  "razzia"
   "eio" {>= "0.6"}
   "tls-eio" {>= "0.15.5"}
   "odoc" {with-doc}

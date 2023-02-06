@@ -1,5 +1,8 @@
 module Direct : sig
   type 'a t = 'a
+
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
 include

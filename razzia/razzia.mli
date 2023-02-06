@@ -51,9 +51,6 @@ and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
 
 type response_err = [ `InvalidCode | `Malformed | `TooLong ]
 
-val make_response :
-  header:string -> body:'a -> ('a response, response_err) result
-
 val status_code : 'a response -> int
 val pp_response : Format.formatter -> 'a response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit
@@ -74,6 +71,9 @@ val pp_err : Format.formatter -> err -> unit
 
 module type IO = sig
   type 'a t
+
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
 module type NET = sig
@@ -84,4 +84,31 @@ module type NET = sig
 
   val single_read : stream -> string
   val get : stack -> request -> (stream response, err) result IO.t
+end
+
+module Private : sig
+  type header = Header.t
+
+  val is_success : header -> bool
+  val make_response : header:header -> body:'a -> 'a response
+
+  module type CHANNEL = sig
+    module IO : IO
+
+    type src
+
+    val next : src -> char option option IO.t
+  end
+
+  module type S = sig
+    module IO : IO
+
+    type src
+
+    val parse :
+      src -> ((header, response_err) result, [ `Eof | `NetErr ]) result IO.t
+  end
+
+  module MakeParser (Chan : CHANNEL) :
+    S with module IO := Chan.IO and type src := Chan.src
 end

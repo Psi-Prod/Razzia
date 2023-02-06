@@ -8,12 +8,12 @@ open Lwt.Syntax
 let get ?(v4 = Ipaddr.V4.Prefix.global) ?v6 req =
   let* tcp =
     Stack.TCP.connect ~ipv4_only:false
-      ~ipv6_only:(match v6 with None -> true | _ -> false)
+      ~ipv6_only:(match v6 with None -> false | _ -> true)
       v4 v6
   in
   let* udp =
     Stack.UDP.connect ~ipv4_only:false
-      ~ipv6_only:(match v6 with None -> true | _ -> false)
+      ~ipv6_only:(match v6 with None -> false | _ -> true)
       v4 v6
   in
   let* stack = Stack.connect udp tcp in

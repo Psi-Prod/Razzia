@@ -32,7 +32,6 @@ and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
 
 type response_err = Response.err
 
-let make_response = Response.make
 let status_code = Response.status_code
 let pp_response = Response.pp
 let pp_response_err = Response.pp_err
@@ -53,9 +52,7 @@ let pp_err fmt = function
   | `Host (`UnknownHost h) -> Format.fprintf fmt "Host:@ UnknownHost %S" h
   | `NetErr -> Format.fprintf fmt "NetErr"
 
-module type IO = sig
-  type 'a t
-end
+module type IO = Common.IO
 
 module type NET = sig
   module IO : IO
@@ -65,4 +62,17 @@ module type NET = sig
 
   val single_read : stream -> string
   val get : stack -> request -> (stream response, err) result IO.t
+end
+
+module Private = struct
+  type header = Header.t
+
+  let is_success = Header.is_success
+
+  let make_response = Response.make
+
+  module type CHANNEL = Header.CHANNEL
+  module type S = Header.S
+
+  module MakeParser = Header.Make
 end

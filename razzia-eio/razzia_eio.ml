@@ -1,5 +1,8 @@
 module Direct = struct
   type 'a t = 'a
+
+  let return x = x
+  let bind x f = f x
 end
 
 open Eio
@@ -24,9 +27,8 @@ let connect ~net (service, host) request =
       Flow.copy_string (Format.asprintf "%a" Razzia.pp_request request) client;
       let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
       try
-        let header, body = Buf_read.pair header Buf_read.take_all buf in
-        Razzia.make_response ~header ~body
-        |> Result.map_error (fun e -> `Header e)
+        let _header, body = Buf_read.pair header Buf_read.take_all buf in
+        Razzia.Private.make_response ~header:(20, "") ~body |> Result.ok
       with
       | Failure _ -> Error (`Header `Malformed)
       | End_of_file -> Error `NetErr)

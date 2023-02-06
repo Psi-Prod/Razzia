@@ -14,28 +14,27 @@ and 'stream body = { encoding : string option; mime : Mime.t; body : 'stream }
 type err = [ `InvalidCode | `Malformed | `TooLong ]
 
 let of_int meta body = function
-  | 10 -> Some (Input { sensitive = false; prompt = meta })
-  | 11 -> Some (Input { sensitive = true; prompt = meta })
+  | 10 -> Input { sensitive = false; prompt = meta }
+  | 11 -> Input { sensitive = true; prompt = meta }
   | 20 ->
       let ({ encoding; mime } : Mime.t') = Mime.of_string meta in
-      let body = { encoding; mime; body } in
-      Some (Sucess body)
-  | 30 -> Some (Redirect (`Temp, meta))
-  | 31 -> Some (Redirect (`Perm, meta))
-  | 40 -> Some (TempFailure (`Msg, meta))
-  | 41 -> Some (TempFailure (`ServerUnavailable, meta))
-  | 42 -> Some (TempFailure (`CGIError, meta))
-  | 43 -> Some (TempFailure (`ProxyError, meta))
-  | 44 -> Some (TempFailure (`SlowDown, meta))
-  | 50 -> Some (PermFailure (`Msg, meta))
-  | 51 -> Some (PermFailure (`NotFound, meta))
-  | 52 -> Some (PermFailure (`Gone, meta))
-  | 53 -> Some (PermFailure (`ProxyRequestRefused, meta))
-  | 59 -> Some (PermFailure (`BadRequest, meta))
-  | 60 -> Some (ClientCertReq (`Msg, meta))
-  | 61 -> Some (ClientCertReq (`CertNotAuth, meta))
-  | 62 -> Some (ClientCertReq (`CertNotValid, meta))
-  | _ -> None
+      Sucess { encoding; mime; body }
+  | 30 -> Redirect (`Temp, meta)
+  | 31 -> Redirect (`Perm, meta)
+  | 40 -> TempFailure (`Msg, meta)
+  | 41 -> TempFailure (`ServerUnavailable, meta)
+  | 42 -> TempFailure (`CGIError, meta)
+  | 43 -> TempFailure (`ProxyError, meta)
+  | 44 -> TempFailure (`SlowDown, meta)
+  | 50 -> PermFailure (`Msg, meta)
+  | 51 -> PermFailure (`NotFound, meta)
+  | 52 -> PermFailure (`Gone, meta)
+  | 53 -> PermFailure (`ProxyRequestRefused, meta)
+  | 59 -> PermFailure (`BadRequest, meta)
+  | 60 -> ClientCertReq (`Msg, meta)
+  | 61 -> ClientCertReq (`CertNotAuth, meta)
+  | 62 -> ClientCertReq (`CertNotValid, meta)
+  | _ -> assert false
 
 let status_code = function
   | Input { sensitive = false; _ } -> 10
@@ -57,13 +56,7 @@ let status_code = function
   | ClientCertReq (`CertNotAuth, _) -> 61
   | ClientCertReq (`CertNotValid, _) -> 62
 
-let make ~header ~body =
-  match Header.parse header with
-  | Ok { status; meta } -> (
-      match of_int meta body status with
-      | None -> Error `InvalidCode
-      | Some resp -> Ok resp)
-  | Error _ as err -> err
+let make ~header:(status, meta) ~body = of_int meta body status
 
 let pp_redirect fmt = function
   | `Temp -> Format.fprintf fmt "`Temp"
@@ -108,6 +101,4 @@ let pp fmt = function
   | ClientCertReq (c, msg) ->
       Format.fprintf fmt "ClientCertReq@ (%a,@ %S)" pp_client_cert c msg
 
-let pp_err fmt = function
-  | `InvalidCode -> Format.fprintf fmt "InvalidCode"
-  | (`Malformed | `TooLong) as err -> Header.pp_err fmt err
+let pp_err = Header.pp_err

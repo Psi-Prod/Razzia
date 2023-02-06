@@ -55,23 +55,19 @@ module Make
                 `Host (`InvalidHostname msg) |> Lwt.return_error)
         | Error (`Msg msg) -> `Host (`BadDomainName msg) |> Lwt.return_error)
 
-  let read_header chan =
-    let buf = Buffer.create (1024 + 3) in
-    let rec parse len cr =
-      if len < 1024 then
-        let^ data = Channel.read_char chan in
-        match data with
-        | `Data '\n' when cr -> Buffer.contents buf |> Lwt.return_ok
-        | `Data '\r' -> parse (len + 1) true
-        | `Data c ->
-            Buffer.add_char buf c;
-            parse (len + 1) false
-        | `Eof -> Lwt.return_error `Malformed
-      else Lwt.return_error `Malformed
-    in
-    Lwt_result.map_error
-      (function `Malformed -> `Header `Malformed | _ -> `NetErr)
-      (parse 0 false)
+  module HeaderParser = Razzia.Private.MakeParser (struct
+    module IO = Lwt
+
+    type src = Channel.t
+
+    let next chan =
+      let open Lwt.Syntax in
+      let* data = Channel.read_char chan in
+      match data with
+      | Ok `Eof -> Lwt.return_some None
+      | Ok (`Data c) -> Lwt.return_some (Some c)
+      | Error _ -> Lwt.return_none
+  end)
 
   let read_body chan =
     let^ body = Channel.read_some chan in
@@ -94,12 +90,12 @@ module Make
     in
     let^ () = write_request flow req in
     let chan = Channel.create flow in
-    let* header = read_header chan in
-    Log.warn (fun l -> l "Header: %S" header);
-    Log.warn (fun l -> l "read body");
-    let^ body = read_body chan in
-    Log.warn (fun l -> l "body readed");
-    match Razzia.make_response ~header ~body with
-    | Ok resp -> Lwt.return_ok resp
-    | Error err -> Lwt.return_error (`Header err)
+    let^ header = HeaderParser.parse chan in
+    match header with
+    | Ok header when Razzia.Private.is_success header ->
+        let^ body = read_body chan in
+        Razzia.Private.make_response ~header ~body |> Lwt.return_ok
+    | Ok header ->
+        Razzia.Private.make_response ~header ~body:"" |> Lwt.return_ok
+    | Error err -> `Header err |> Lwt.return_error
 end

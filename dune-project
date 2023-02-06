@@ -33,8 +33,7 @@
  (name razzia-mirage)
  (synopsis "Razzia IO implementation for MirageOS")
  (depends
-  (razzia
-   (= version))
+  razzia
   (dns-client
    (>= 6.4.1))
   (mirage-channel
@@ -52,10 +51,8 @@
  (name razzia-unix)
  (synopsis "Razzia IO implementation using UNIX bindings")
  (depends
-  (razzia
-   (= version))
-  (razzia-mirage
-   (= version))
+  razzia
+  razzia-mirage 
   (mirage-clock-unix
    (>= 4.2.0))
   (mirage-random
@@ -71,8 +68,7 @@
  (name razzia-eio)
  (synopsis "Razzia IO implementation using Eio")
  (depends
-  (razzia
-   (= version))
+  razzia
   (eio
    (>= 0.6))
   (tls-eio

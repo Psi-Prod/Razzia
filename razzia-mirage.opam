@@ -9,7 +9,7 @@ homepage: "https://github.com/Psi-Prod/Razzia"
 bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
   "dune" {>= "3.0"}
-  "razzia" {= "version"}
+  "razzia"
   "dns-client" {>= "6.4.1"}
   "mirage-channel" {>= "4.1.0"}
   "mirage-random" {>= "3.0.0"}

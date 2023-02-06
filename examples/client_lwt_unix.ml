@@ -3,12 +3,12 @@ open Lwt.Syntax
 let ( >>= ) = Lwt.( >>= )
 
 let () =
-  Logs.set_level (Some Warning);
+  Logs.set_level (Some Info);
   Logs.set_reporter (Logs_fmt.reporter ())
 
 let main () =
   let* () =
-    match Razzia.make_request "gemini://gemini.circumlunar.space/" with
+    match Razzia.make_request "heyplzlookat.me" with
     | Ok req -> (
         Razzia_unix.get req >>= function
         | Ok (Sucess { encoding = _; mime = Gemtext _; body }) ->
@@ -17,7 +17,6 @@ let main () =
         | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_err err)
     | Error err -> Lwt_fmt.printf "Request error: %a" Razzia.pp_request_err err
   in
-  let* () = Lwt_io.print "\n" in
   Lwt_fmt.flush Lwt_fmt.stdout
 
 let () =
