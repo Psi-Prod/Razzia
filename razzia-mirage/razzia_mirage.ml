@@ -70,10 +70,16 @@ module Make
   end)
 
   let read_body chan =
-    let^ body = Channel.read_some chan in
-    match body with
-    | `Data cstruct -> Cstruct.to_string cstruct |> Lwt.return_ok
-    | `Eof -> Lwt.return_error `PrematuredEof
+    let buf = Buffer.create 16384 in
+    let rec loop () =
+      let^ chunk = Channel.read_some ~len:16384 chan in
+      match chunk with
+      | `Eof -> Buffer.contents buf |> Lwt.return_ok
+      | `Data cstruct ->
+          Cstruct.to_bytes cstruct |> Buffer.add_bytes buf;
+          loop ()
+    in
+    loop ()
 
   let single_read s = s
 
