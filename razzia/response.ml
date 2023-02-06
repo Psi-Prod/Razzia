@@ -1,6 +1,6 @@
 type 'stream t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of 'stream body
+  | Success of 'stream body
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]
@@ -18,7 +18,7 @@ let of_int meta body = function
   | 11 -> Input { sensitive = true; prompt = meta }
   | 20 ->
       let ({ encoding; mime } : Mime.t') = Mime.of_string meta in
-      Sucess { encoding; mime; body }
+      Success { encoding; mime; body }
   | 30 -> Redirect (`Temp, meta)
   | 31 -> Redirect (`Perm, meta)
   | 40 -> TempFailure (`Msg, meta)
@@ -39,7 +39,7 @@ let of_int meta body = function
 let status_code = function
   | Input { sensitive = false; _ } -> 10
   | Input { sensitive = true; _ } -> 11
-  | Sucess _ -> 20
+  | Success _ -> 20
   | Redirect (`Temp, _) -> 30
   | Redirect (`Perm, _) -> 31
   | TempFailure (`Msg, _) -> 40
@@ -85,9 +85,9 @@ let pp fmt = function
   | Input { sensitive; prompt } ->
       Format.fprintf fmt "Input@ {@ sensitive@ =@ %B;@ prompt@ =@ %S@ }"
         sensitive prompt
-  | Sucess { encoding; mime; _ } ->
+  | Success { encoding; mime; _ } ->
       Format.fprintf fmt
-        "Sucess@ {@ encoding = %a;@ mime@ =@ %a;@ body@ =@ ...@ }"
+        "Success@ {@ encoding = %a;@ mime@ =@ %a;@ body@ =@ ...@ }"
         (Format.pp_print_option
            ~none:(fun fmt () -> Format.pp_print_string fmt "None")
            Format.pp_print_string)

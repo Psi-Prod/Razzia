@@ -13,7 +13,7 @@ let pp_request_err = Request.pp_err
 
 type 'stream response = 'stream Response.t =
   | Input of { sensitive : bool; prompt : string }
-  | Sucess of 'stream body
+  | Success of 'stream body
   | Redirect of [ `Temp | `Perm ] * string
   | TempFailure of
       [ `Msg | `ServerUnavailable | `CGIError | `ProxyError | `SlowDown ]

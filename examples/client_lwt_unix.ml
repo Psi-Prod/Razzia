@@ -11,7 +11,7 @@ let main () =
     match Razzia.make_request "heyplzlookat.me" with
     | Ok req -> (
         Razzia_unix.get req >>= function
-        | Ok (Sucess { encoding = _; mime = Gemtext _; body }) ->
+        | Ok (Success { encoding = _; mime = Gemtext _; body }) ->
             Lwt_io.print body
         | Ok resp -> Lwt_fmt.printf "%a" Razzia.pp_response resp
         | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_err err)
