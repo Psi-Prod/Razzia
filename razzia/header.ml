@@ -1,5 +1,5 @@
 type t = int * string
-type parse_err = [ `InvalidCode | `Malformed | `TooLong ]
+type parse_err = [ `InvalidCode of int | `Malformed | `TooLong ]
 
 let is_success (s, _) = Int.equal 20 s
 
@@ -11,7 +11,7 @@ let pp fmt (status, meta) =
   Format.fprintf fmt "{ status = %i; meta = %S }" status meta
 
 let pp_err fmt = function
-  | `InvalidCode -> Format.fprintf fmt "InvalidCode"
+  | `InvalidCode c -> Format.fprintf fmt "InvalidCode %i" c
   | `Malformed -> Format.fprintf fmt "Malformed"
   | `TooLong -> Format.fprintf fmt "TooLong"
 
@@ -66,9 +66,10 @@ module Make (Chan : CHANNEL) :
     in
     let* result = loop 0 false "" in
     match result with
-    | Ok (Ok (s, meta)) when is_valid (int_of_string s) ->
-        Ok (int_of_string s, meta) |> ok
-    | Ok (Ok _) -> ok (Error `InvalidCode)
+    | Ok (Ok (s, meta)) ->
+        let code = int_of_string s in
+        ok
+        @@ if is_valid code then Ok (code, meta) else Error (`InvalidCode code)
     | Ok (Error _ as err) -> ok err
     | Error e -> err e
 end

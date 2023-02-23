@@ -11,7 +11,7 @@ type 'stream t =
 
 and 'stream body = { encoding : string option; mime : Mime.t; body : 'stream }
 
-type err = [ `InvalidCode | `Malformed | `TooLong ]
+type err = [ `InvalidCode of int | `Malformed | `TooLong ]
 
 let of_int meta body = function
   | 10 -> Input { sensitive = false; prompt = meta }
@@ -56,7 +56,9 @@ let status_code = function
   | ClientCertReq (`CertNotAuth, _) -> 61
   | ClientCertReq (`CertNotValid, _) -> 62
 
-let make ~header:(status, meta) ~body = of_int meta body status
+let make ~header:(status, meta) ~body =
+  if String.length meta > 1024 then Error `TooLong
+  else Ok (of_int meta body status)
 
 let pp_redirect fmt = function
   | `Temp -> Format.fprintf fmt "`Temp"

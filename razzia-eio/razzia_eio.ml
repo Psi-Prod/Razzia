@@ -37,9 +37,11 @@ let connect ~net (service, host) request =
         match HeaderParser.parse buf with
         | Ok (Ok header) when Razzia.Private.is_success header ->
             let body = Buf_read.take_all buf in
-            Razzia.Private.make_response ~header ~body |> Result.ok
+            Razzia.Private.make_response ~header ~body
+            |> Result.map_error (fun e -> `Header e)
         | Ok (Ok header) ->
-            Razzia.Private.make_response ~header ~body:"" |> Result.ok
+            Razzia.Private.make_response ~header ~body:""
+            |> Result.map_error (fun e -> `Header e)
         | Ok (Error err) -> `Header err |> Result.error
         | Error _ -> Error `NetErr
       with

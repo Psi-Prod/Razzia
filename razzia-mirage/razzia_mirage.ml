@@ -96,10 +96,16 @@ module Make
     let^ () = write_request flow req in
     let chan = Channel.create flow in
     let^ header = HeaderParser.parse chan in
+
     match header with
     | Ok header when Razzia.Private.is_success header ->
         let^ body = read_body chan in
-        Lwt.return_ok (Razzia.Private.make_response ~header ~body)
-    | Ok header -> Lwt.return_ok (Razzia.Private.make_response ~header ~body:"")
+        Razzia.Private.make_response ~header ~body
+        |> Result.map_error (fun e -> `Header e)
+        |> Lwt.return
+    | Ok header ->
+        Razzia.Private.make_response ~header ~body:""
+        |> Result.map_error (fun e -> `Header e)
+        |> Lwt.return
     | Error err -> Lwt.return_error (`Header err)
 end

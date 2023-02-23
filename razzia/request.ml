@@ -38,14 +38,12 @@ let check_userinfo uri =
 let check_host uri =
   match Uri.host uri with None -> Error `MissingHost | Some h -> Ok h
 
-let make ?(default_scheme = "gemini") ?query url =
+let make ?(default_scheme = "gemini") uri =
+  let url = Uri.to_string uri in
   let* () = check_length url in
   let* () = check_utf8_encoding url in
   let* () = check_bom url in
-  let uri = Uri.of_string url |> Uri.canonicalize in
-  let uri =
-    Option.fold query ~none:uri ~some:(fun v -> Uri.with_query uri [ (v, []) ])
-  in
+  let uri = Uri.canonicalize uri in
   let uri =
     match Uri.scheme uri with
     | None ->
