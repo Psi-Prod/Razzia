@@ -1,4 +1,4 @@
 (library
  (name razzia_eio)
- (public_name razzia.eio)
+ (public_name razzia-eio)
  (libraries eio razzia tls-eio))

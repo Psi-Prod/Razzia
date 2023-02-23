@@ -1,29 +1,57 @@
-(* let tls_config =
-     let null ?ip:_ ~host:_ _certs = Ok None in
-     Tls.Config.client ~authenticator:null ()
-   (* TODO: TOFU *)
+module Direct = struct
+  type 'a t = 'a
 
-   let rec get t url =
-     if Uri.scheme url <> Some "gemini" then
-       Fmt.failwith "Not a gemini URL: %a" Uri.pp url;
-     let port = Uri.port url |> Option.value ~default:1965 in
-     match Uri.host url with
-     | None -> Fmt.failwith "Missing host in URL %a" Uri.pp url
-     | Some host -> (
-         let response =
-           Eio.Net.with_tcp_connect t.net ~service:(string_of_int port) ~host
-           @@ fun conn ->
-           let host =
-             Domain_name.of_string_exn host |> Domain_name.host |> Result.to_option
-           in
-           let conn = Tls_eio.client_of_flow tls_config ?host conn in
-           Eio.Flow.copy_string (Uri.to_string url ^ "\r\n") conn;
-           Eio.Buf_read.parse_exn response conn ~max_size:(1024 * 1024)
-         in
-         match response with
-         | `OK (mime_type, data) ->
-             Log.debug (fun f -> f "OK: mime-type=%S" mime_type);
-             OK { url; mime_type; data }
-         | `Redirect uri ->
-             Log.debug (fun f -> f "Redirect to %a" Uri.pp uri);
-             get t uri) *)
+  let return x = x
+  let bind x f = f x
+end
+
+open Eio
+
+let tls_config =
+  Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _certs -> Ok None) ()
+
+let ( let+ ) x f =
+  match x with
+  | Error (`Msg msg) -> Error (`Host (`InvalidHostname msg))
+  | Ok x -> f x
+
+module HeaderParser = Razzia.Private.MakeParser (struct
+  module IO = Direct
+
+  type src = Buf_read.t
+
+  let next buf =
+    match Buf_read.any_char buf with
+    | exception End_of_file -> Some None
+    | c -> Some (Some c)
+end)
+
+let connect ~net (service, host) request =
+  Net.with_tcp_connect net ~service ~host (fun flow ->
+      let+ dn = Domain_name.of_string host in
+      let+ host = Domain_name.host dn in
+      let client = Tls_eio.client_of_flow tls_config ~host flow in
+      Flow.copy_string (Format.asprintf "%a" Razzia.pp_request request) client;
+      let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
+      try
+        match HeaderParser.parse buf with
+        | Ok (Ok header) when Razzia.Private.is_success header ->
+            let body = Buf_read.take_all buf in
+            Razzia.Private.make_response ~header ~body
+            |> Result.map_error (fun e -> `Header e)
+        | Ok (Ok header) ->
+            Razzia.Private.make_response ~header ~body:""
+            |> Result.map_error (fun e -> `Header e)
+        | Ok (Error err) -> `Header err |> Result.error
+        | Error _ -> Error `NetErr
+      with
+      | Failure _ -> Error (`Header `Malformed)
+      | End_of_file -> Error `NetErr)
+
+let get net req =
+  let host = Razzia.host req in
+  try connect ~net (Razzia.port req |> Int.to_string, host) req
+  with Exn.Io (Net.E (Connection_failure No_matching_addresses), _) ->
+    Error (`Host (`UnknownHost host))
+
+let single_read s = s
