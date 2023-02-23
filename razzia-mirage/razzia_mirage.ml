@@ -36,12 +36,12 @@ module Make
 
   let gethostbyname dns h =
     let open Lwt.Infix in
-    DNS.gethostbyname6 dns h >>= function
-    | Ok addr -> Lwt.return_ok (Ipaddr.V6 addr)
+    DNS.gethostbyname dns h >>= function
+    | Ok addr -> Lwt.return_ok (Ipaddr.V4 addr)
     | Error _ -> (
-        DNS.gethostbyname dns h >>= function
-        | Ok addr -> Lwt.return_ok (Ipaddr.V4 addr)
-        | Error (`Msg msg) -> `Host (`UnknownHost msg) |> Lwt.return_error)
+        DNS.gethostbyname6 dns h >|= function
+        | Ok addr -> Ok (Ipaddr.V6 addr)
+        | Error (`Msg msg) -> Error (`Host (`UnknownHost msg)))
 
   let resolve dns host =
     match Ipaddr.of_string host with
@@ -52,8 +52,8 @@ module Make
             match Domain_name.host dn with
             | Ok h -> gethostbyname dns h
             | Error (`Msg msg) ->
-                `Host (`InvalidHostname msg) |> Lwt.return_error)
-        | Error (`Msg msg) -> `Host (`BadDomainName msg) |> Lwt.return_error)
+                Lwt.return_error (`Host (`InvalidHostname msg)))
+        | Error (`Msg msg) -> Lwt.return_error (`Host (`BadDomainName msg)))
 
   module HeaderParser = Razzia.Private.MakeParser (struct
     module IO = Lwt
@@ -61,12 +61,11 @@ module Make
     type src = Channel.t
 
     let next chan =
-      let open Lwt.Syntax in
-      let* data = Channel.read_char chan in
-      match data with
-      | Ok `Eof -> Lwt.return_some None
-      | Ok (`Data c) -> Lwt.return_some (Some c)
-      | Error _ -> Lwt.return_none
+      let open Lwt.Infix in
+      Channel.read_char chan >|= function
+      | Ok `Eof -> Some None
+      | Ok (`Data c) -> Some (Some c)
+      | Error _ -> None
   end)
 
   let read_body chan =
@@ -100,8 +99,7 @@ module Make
     match header with
     | Ok header when Razzia.Private.is_success header ->
         let^ body = read_body chan in
-        Razzia.Private.make_response ~header ~body |> Lwt.return_ok
-    | Ok header ->
-        Razzia.Private.make_response ~header ~body:"" |> Lwt.return_ok
-    | Error err -> `Header err |> Lwt.return_error
+        Lwt.return_ok (Razzia.Private.make_response ~header ~body)
+    | Ok header -> Lwt.return_ok (Razzia.Private.make_response ~header ~body:"")
+    | Error err -> Lwt.return_error (`Header err)
 end

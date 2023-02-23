@@ -4,9 +4,9 @@ let ( >>= ) = Lwt.( >>= )
 
 let main () =
   let* () =
-    match Razzia.make_request "gemini://perso.pw/blog/rss.xml" with
+    match Razzia.make_request "gemini://heyplzlookat.me/" with
     | Ok req -> (
-        Razzia_unix.get req >>= function
+        Razzia_unix.get ~v6:Ipaddr.V6.Prefix.global_unicast_001 req >>= function
         | Ok (Success { encoding = _; mime = Gemtext _; body }) ->
             Lwt_fmt.printf "%s" body
         | Ok (Success { body; _ }) -> Lwt_fmt.printf "%s" body
