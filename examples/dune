@@ -10,4 +10,4 @@
   razzia
   razzia-eio
   razzia-unix
-  tls.lwt))
+  tls-lwt))

@@ -17,5 +17,5 @@ let main () =
   Lwt_fmt.flush Lwt_fmt.stdout
 
 let () =
-  Mirage_crypto_rng_lwt.initialize ();
+  Mirage_crypto_rng_lwt.initialize (module Mirage_crypto_rng.Fortuna);
   main () |> Lwt_main.run
