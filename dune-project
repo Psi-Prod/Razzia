@@ -24,10 +24,14 @@
  (depends
   (ocaml
    (>= 4.14))
+  (mirage-clock
+   (>= 4.2.0))
   (uri
    (>= 4.2.0))
   (re
-   (>= 1.10.4))))
+   (>= 1.10.4))
+  (tls (>= 0.16.0))
+  (x509 (>= 0.16.4))))
 
 (package
  (name razzia-mirage)
@@ -71,5 +75,7 @@
   razzia
   (eio
    (>= 0.6))
+  (mirage-clock-unix
+   (>= 4.2.0))
   (tls-eio
    (>= 0.15.5))))
