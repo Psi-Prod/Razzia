@@ -68,8 +68,10 @@ module Private = struct
   type header = Header.t
 
   let is_success = Header.is_success
-
   let make_response = Response.make
+
+  module type TLS_CFG = Request.TLS_CFG
+  module TlsCfg = Request.TlsCfg
 
   module type CHANNEL = Header.CHANNEL
   module type S = Header.S

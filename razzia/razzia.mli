@@ -17,7 +17,11 @@ type request_err =
   | `UserInfoNotAllowed  (** User info component of URL is provided. *) ]
 
 val make_request :
-  ?default_scheme:string -> Uri.t -> (request, request_err) result
+  ?trusted:(string * int * string * float) list ->
+  ?client_cert:Tls.Config.own_cert ->
+  ?default_scheme:string ->
+  Uri.t ->
+  (request, request_err) result
 (** Creates a {type:request} from an URL. [query] is [query] component used *)
 
 (** Assuming URL is "heyplzlookat.me:80/index.html?foobar". *)
@@ -107,15 +111,22 @@ module type NET = sig
   val get : stack -> request -> (stream response, err) result IO.t
 end
 
-module Private : sig
-  (** You can ignore it. *)
+(**/**)
 
+module Private : sig
   type header = Header.t
 
   val is_success : header -> bool
 
   val make_response :
     header:header -> body:'a -> ('a response, response_err) result
+
+  module type TLS_CFG = sig
+    val make :
+      request -> (string * int * string * float) option ref -> Tls.Config.client
+  end
+
+  module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG
 
   module type CHANNEL = sig
     module IO : IO
@@ -137,3 +148,5 @@ module Private : sig
   module MakeParser (Chan : CHANNEL) :
     S with module IO := Chan.IO and type src := Chan.src
 end
+
+(**/**)

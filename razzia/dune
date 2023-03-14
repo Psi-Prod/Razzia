@@ -1,4 +1,4 @@
 (library
  (public_name razzia)
  (name razzia)
- (libraries re uri))
+ (libraries re uri tls x509 mirage-clock))

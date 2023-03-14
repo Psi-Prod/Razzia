@@ -82,21 +82,18 @@ module Make
 
   let single_read s = s
 
+  module TlsClientCfg = Razzia.Private.TlsCfg (Pclock)
+
   let get stack req =
     let dns = DNS.create stack in
     let* addr = resolve dns (Razzia.host req) in
     let^ conn =
       Stack.TCP.create_connection (Stack.tcp stack) (addr, Razzia.port req)
     in
-    let^ flow =
-      TLS.client_of_flow
-        (Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None) ())
-        conn
-    in
+    let^ flow = TLS.client_of_flow (TlsClientCfg.make req (ref None)) conn in
     let^ () = write_request flow req in
     let chan = Channel.create flow in
     let^ header = HeaderParser.parse chan in
-
     match header with
     | Ok header when Razzia.Private.is_success header ->
         let^ body = read_body chan in
