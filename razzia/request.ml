@@ -1,5 +1,5 @@
 type t = {
-  host : string;
+  host : [ `host ] Domain_name.t;
   port : int;
   uri : Uri.t;
   client_cert : Tls.Config.own_cert;
@@ -15,7 +15,8 @@ type err =
   | `MalformedUTF8
   | `MissingHost
   | `MissingScheme
-  | `UserInfoNotAllowed ]
+  | `UserInfoNotAllowed
+  | `DomainNameError of string ]
 
 let ( let* ) x f = match x with Error _ as err -> err | Ok x -> f x
 
@@ -44,7 +45,15 @@ let check_userinfo uri =
   | Some _ -> Error `UserInfoNotAllowed
 
 let check_host uri =
-  match Uri.host uri with None -> Error `MissingHost | Some h -> Ok h
+  match Uri.host uri with
+  | None -> Error `MissingHost
+  | Some h -> (
+      match Domain_name.of_string h with
+      | Error (`Msg s) -> Error (`DomainNameError s)
+      | Ok d -> (
+          match Domain_name.host d with
+          | Error (`Msg s) -> Error (`DomainNameError s)
+          | Ok d -> Ok d))
 
 let make ?(trusted = []) ?(client_cert = `None) ?(default_scheme = "gemini") uri
     =
@@ -79,6 +88,7 @@ let pp_err fmt = function
   | `MissingHost -> Format.fprintf fmt "MissingHost"
   | `MissingScheme -> Format.fprintf fmt "MissingScheme"
   | `UserInfoNotAllowed -> Format.fprintf fmt "UserInfoNotAllowed"
+  | `DomainNameError s -> Format.fprintf fmt "DomainNameError (%s)" s
 
 module type TLS_CFG = sig
   val make : t -> cert option ref -> Tls.Config.client
@@ -86,7 +96,9 @@ end
 
 module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
   let find_by_host req =
-    List.find_opt (fun (h, _, _, _) -> String.equal req.host h) req.trusted
+    List.find_opt
+      (fun (h, _, _, _) -> Domain_name.to_string req.host |> String.equal h)
+      req.trusted
 
   let make req trustable =
     let tofu = find_by_host req in
@@ -100,7 +112,8 @@ module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
       in
       let new_entry =
         Option.value
-          ~default:(req.host, req.port, srv_fingerprint, exp_date)
+          ~default:
+            (Domain_name.to_string req.host, req.port, srv_fingerprint, exp_date)
           tofu
       in
       let fingerprint =

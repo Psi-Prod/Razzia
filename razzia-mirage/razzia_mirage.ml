@@ -86,11 +86,14 @@ module Make
 
   let get stack req =
     let dns = DNS.create stack in
-    let* addr = resolve dns (Razzia.host req) in
+    let host = Razzia.host req in
+    let* addr = Domain_name.to_string host |> resolve dns in
     let^ conn =
       Stack.TCP.create_connection (Stack.tcp stack) (addr, Razzia.port req)
     in
-    let^ flow = TLS.client_of_flow (TlsClientCfg.make req (ref None)) conn in
+    let^ flow =
+      TLS.client_of_flow ~host (TlsClientCfg.make req (ref None)) conn
+    in
     let^ () = write_request flow req in
     let chan = Channel.create flow in
     let^ header = HeaderParser.parse chan in

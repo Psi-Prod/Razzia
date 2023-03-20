@@ -7,11 +7,6 @@ end
 
 open Eio
 
-let ( let+ ) x f =
-  match x with
-  | Error (`Msg msg) -> Error (`Host (`InvalidHostname msg))
-  | Ok x -> f x
-
 module HeaderParser = Razzia.Private.MakeParser (struct
   module IO = Direct
 
@@ -26,9 +21,8 @@ end)
 module TlsClientCfg = Razzia.Private.TlsCfg (Pclock)
 
 let connect ~net (service, host) req =
-  Net.with_tcp_connect net ~service ~host (fun flow ->
-      let+ dn = Domain_name.of_string host in
-      let+ host = Domain_name.host dn in
+  Net.with_tcp_connect net ~service ~host:(Domain_name.to_string host)
+    (fun flow ->
       let client =
         Tls_eio.client_of_flow (TlsClientCfg.make req (ref None)) ~host flow
       in
@@ -53,6 +47,6 @@ let get net req =
   let host = Razzia.host req in
   try connect ~net (Razzia.port req |> Int.to_string, host) req
   with Exn.Io (Net.E (Connection_failure No_matching_addresses), _) ->
-    Error (`Host (`UnknownHost host))
+    Error (`Host (`UnknownHost (Domain_name.to_string host)))
 
 let single_read s = s

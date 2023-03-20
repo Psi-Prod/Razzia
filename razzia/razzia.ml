@@ -71,6 +71,7 @@ module Private = struct
   let make_response = Response.make
 
   module type TLS_CFG = Request.TLS_CFG
+
   module TlsCfg = Request.TlsCfg
 
   module type CHANNEL = Header.CHANNEL

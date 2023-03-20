@@ -14,7 +14,8 @@ type request_err =
   | `MalformedUTF8  (** URL contains malformed UTF-8. *)
   | `MissingHost  (** Host component of URL is not present. *)
   | `MissingScheme  (** Scheme component of URL is not present. *)
-  | `UserInfoNotAllowed  (** User info component of URL is provided. *) ]
+  | `UserInfoNotAllowed  (** User info component of URL is provided. *)
+  | `DomainNameError of string  (** {module:Domain_name} error. *) ]
 
 val make_request :
   ?trusted:(string * int * string * float) list ->
@@ -26,7 +27,7 @@ val make_request :
 
 (** Assuming URL is "heyplzlookat.me:80/index.html?foobar". *)
 
-val host : request -> string
+val host : request -> [ `host ] Domain_name.t
 (** [host req] is ["heyplzlookat.me"]. *)
 
 val port : request -> int
