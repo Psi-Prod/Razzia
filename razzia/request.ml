@@ -96,9 +96,8 @@ end
 
 module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
   let find_by_host req =
-    List.find_opt
-      (fun (h, _, _, _) -> Domain_name.to_string req.host |> String.equal h)
-      req.trusted
+    let host = Domain_name.to_string req.host in
+    List.find_opt (fun (h, _, _, _) -> String.equal host h) req.trusted
 
   let make req trustable =
     let tofu = find_by_host req in
