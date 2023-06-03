@@ -3,7 +3,6 @@
  (public_name razzia-unix)
  (libraries
   mirage-clock-unix
-  mirage-random
   mirage-random-stdlib
   mirage-time-unix
   razzia

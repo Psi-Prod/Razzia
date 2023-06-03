@@ -9,9 +9,7 @@ module type S = sig
 end
 
 module Make : functor
-  (Random : Mirage_random.S)
-  (Time : Mirage_time.S)
-  (Mclock : Mirage_clock.MCLOCK)
   (Pclock : Mirage_clock.PCLOCK)
   (Stack : Tcpip.Stack.V4V6)
+  (Dns : Dns_client_mirage.S with type Transport.stack = Stack.t)
   -> S with type stack := Stack.t

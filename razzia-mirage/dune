@@ -4,8 +4,6 @@
  (libraries
   dns-client-mirage
   mirage-channel
-  mirage-random
-  mirage-time
   razzia
   tls
   tls-mirage))

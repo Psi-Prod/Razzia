@@ -12,8 +12,6 @@ depends: [
   "razzia"
   "dns-client-mirage" {>= "7.0.0"}
   "mirage-channel" {>= "4.1.0"}
-  "mirage-random" {>= "3.0.0"}
-  "mirage-time" {>= "3.0.0"}
   "tls-lwt" {>= "0.15.4"}
   "tls-mirage" {>= "0.15.4"}
   "odoc" {with-doc}

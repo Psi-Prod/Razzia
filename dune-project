@@ -30,8 +30,10 @@
    (>= 4.2.0))
   (re
    (>= 1.10.4))
-  (tls (>= 0.16.0))
-  (x509 (>= 0.16.4))))
+  (tls
+   (>= 0.16.0))
+  (x509
+   (>= 0.16.4))))
 
 (package
  (name razzia-mirage)
@@ -42,10 +44,6 @@
    (>= 7.0.0))
   (mirage-channel
    (>= 4.1.0))
-  (mirage-random
-   (>= 3.0.0))
-  (mirage-time
-   (>= 3.0.0))
   (tls-lwt
    (>= 0.15.4))
   (tls-mirage
@@ -59,8 +57,6 @@
   razzia-mirage
   (mirage-clock-unix
    (>= 4.2.0))
-  (mirage-random
-   (>= 3.0.0))
   (mirage-random-stdlib
    (>= 0.1.0))
   (mirage-time-unix
