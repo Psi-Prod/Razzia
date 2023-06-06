@@ -59,6 +59,7 @@ and 'stream body = 'stream Response.body = {
   encoding : string option;  (** Charset of the document. *)
   mime : mime;  (** MIME type of the body. *)
   body : 'stream;  (** Content of the body. *)
+  raw_meta : string;
 }
 
 and mime = Mime.t =

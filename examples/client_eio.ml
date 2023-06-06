@@ -2,7 +2,7 @@ let main net =
   (match Razzia.make_request (Uri.of_string "heyplzlookat.me/") with
   | Ok req -> (
       match Razzia_eio.get net req with
-      | Ok (Success { encoding = _; mime = Gemtext _; body }) ->
+      | Ok (Success { mime = Gemtext _; body; _ }) ->
           Razzia_eio.single_read body |> print_string
       | Ok resp -> Format.printf "%a" Razzia.pp_response resp
       | Error err -> Format.printf "Fetch error: %a" Razzia.pp_err err)

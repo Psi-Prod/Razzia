@@ -26,6 +26,7 @@ and 'stream body = 'stream Response.body = {
   encoding : string option;
   mime : mime;
   body : 'stream;
+  raw_meta : string;
 }
 
 and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
