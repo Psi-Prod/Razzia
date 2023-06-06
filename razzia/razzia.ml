@@ -34,6 +34,7 @@ and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
 type response_err = Response.err
 
 let status_code = Response.status_code
+let meta = Response.meta
 let pp_response = Response.pp
 let pp_response_err = Response.pp_err
 

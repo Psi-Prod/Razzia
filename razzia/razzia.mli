@@ -76,8 +76,11 @@ type response_err =
   | `Malformed  (** Response header is unparsable. *)
   | `TooLong  (** Response header is longer than 1024 characters. *) ]
 
-val status_code : 'a response -> int
+val status_code : _ response -> int
 (** Retrieve the status code of response header. *)
+
+val meta : _ response -> string
+(** Retrieve meta string of response header. *)
 
 val pp_response : Format.formatter -> 'a response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit
