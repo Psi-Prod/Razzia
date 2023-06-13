@@ -11,5 +11,5 @@ end
 module Make : functor
   (Pclock : Mirage_clock.PCLOCK)
   (Stack : Tcpip.Stack.V4V6)
-  (Dns : Dns_client_mirage.S with type Transport.stack = Stack.t)
+  (Dns : Dns_client.S with type stack = Stack.t and type 'a io = 'a Lwt.t)
   -> S with type stack := Stack.t

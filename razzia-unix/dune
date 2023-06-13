@@ -2,6 +2,7 @@
  (name razzia_unix)
  (public_name razzia-unix)
  (libraries
+  dns-client-mirage
   mirage-clock-unix
   mirage-random-stdlib
   mirage-time-unix

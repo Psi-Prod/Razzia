@@ -2,8 +2,9 @@
  (name razzia_mirage)
  (public_name razzia-mirage)
  (libraries
-  dns-client-mirage
+  dns-client
   mirage-channel
   razzia
+  tcpip
   tls
   tls-mirage))
