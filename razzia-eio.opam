@@ -11,6 +11,7 @@ depends: [
   "dune" {>= "3.0"}
   "razzia"
   "eio" {>= "0.6"}
+  "mirage-clock-unix" {>= "4.2.0"}
   "tls-eio" {>= "0.15.5"}
   "odoc" {with-doc}
 ]

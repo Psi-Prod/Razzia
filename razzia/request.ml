@@ -1,4 +1,12 @@
-type t = { host : string; port : int; uri : Uri.t }
+type t = {
+  host : [ `host ] Domain_name.t;
+  port : int;
+  uri : Uri.t;
+  client_cert : Tls.Config.own_cert;
+  trusted : cert list;
+}
+
+and cert = string * int * string * float
 
 type err =
   [ `AboveMaxSize
@@ -7,7 +15,8 @@ type err =
   | `MalformedUTF8
   | `MissingHost
   | `MissingScheme
-  | `UserInfoNotAllowed ]
+  | `UserInfoNotAllowed
+  | `DomainNameError of string ]
 
 let ( let* ) x f = match x with Error _ as err -> err | Ok x -> f x
 
@@ -36,9 +45,18 @@ let check_userinfo uri =
   | Some _ -> Error `UserInfoNotAllowed
 
 let check_host uri =
-  match Uri.host uri with None -> Error `MissingHost | Some h -> Ok h
+  match Uri.host uri with
+  | None -> Error `MissingHost
+  | Some h -> (
+      match Domain_name.of_string h with
+      | Error (`Msg s) -> Error (`DomainNameError s)
+      | Ok d -> (
+          match Domain_name.host d with
+          | Error (`Msg s) -> Error (`DomainNameError s)
+          | Ok d -> Ok d))
 
-let make ?(default_scheme = "gemini") uri =
+let make ?(trusted = []) ?(client_cert = `None) ?(default_scheme = "gemini") uri
+    =
   let url = Uri.to_string uri in
   let* () = check_length url in
   let* () = check_utf8_encoding url in
@@ -54,7 +72,7 @@ let make ?(default_scheme = "gemini") uri =
   let* () = check_userinfo uri in
   let* host = check_host uri in
   let port = Uri.port uri |> Option.value ~default:1965 in
-  Ok { host; port; uri }
+  Ok { host; port; uri; client_cert; trusted }
 
 let host t = t.host
 let port t = t.port
@@ -70,3 +88,46 @@ let pp_err fmt = function
   | `MissingHost -> Format.fprintf fmt "MissingHost"
   | `MissingScheme -> Format.fprintf fmt "MissingScheme"
   | `UserInfoNotAllowed -> Format.fprintf fmt "UserInfoNotAllowed"
+  | `DomainNameError s -> Format.fprintf fmt "DomainNameError (%s)" s
+
+module type TLS_CFG = sig
+  val make : t -> cert option ref -> Tls.Config.client
+end
+
+module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
+  let find_by_host req =
+    let host = Domain_name.to_string req.host in
+    List.find_opt (fun (h, _, _, _) -> String.equal host h) req.trusted
+
+  let make req trustable =
+    let tofu = find_by_host req in
+    let authenticator ?ip:_ ~host certs =
+      let cert = List.hd certs in
+      let srv_fingerprint =
+        X509.Certificate.fingerprint `SHA256 cert |> Cstruct.to_string
+      in
+      let exp_date =
+        X509.Certificate.validity cert |> snd |> Ptime.to_float_s
+      in
+      let new_entry =
+        Option.value
+          ~default:
+            (Domain_name.to_string req.host, req.port, srv_fingerprint, exp_date)
+          tofu
+      in
+      let fingerprint =
+        Option.fold tofu ~none:srv_fingerprint ~some:(fun (_, _, f, _) -> f)
+        |> Cstruct.of_string
+      in
+      let v =
+        X509.Validation.trust_cert_fingerprint ~host
+          ~time:(fun () -> P.now_d_ps () |> Ptime.unsafe_of_d_ps |> Option.some)
+          ~hash:`SHA256 ~fingerprint certs
+      in
+      (match (v, tofu) with
+      | Ok _, None -> trustable := Some new_entry
+      | _ -> ());
+      v
+    in
+    Tls.Config.client ~authenticator ~certificates:req.client_cert ()
+end

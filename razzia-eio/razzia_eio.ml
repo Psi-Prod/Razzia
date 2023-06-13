@@ -7,14 +7,6 @@ end
 
 open Eio
 
-let tls_config =
-  Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _certs -> Ok None) ()
-
-let ( let+ ) x f =
-  match x with
-  | Error (`Msg msg) -> Error (`Host (`InvalidHostname msg))
-  | Ok x -> f x
-
 module HeaderParser = Razzia.Private.MakeParser (struct
   module IO = Direct
 
@@ -26,12 +18,15 @@ module HeaderParser = Razzia.Private.MakeParser (struct
     | c -> Some (Some c)
 end)
 
-let connect ~net (service, host) request =
-  Net.with_tcp_connect net ~service ~host (fun flow ->
-      let+ dn = Domain_name.of_string host in
-      let+ host = Domain_name.host dn in
-      let client = Tls_eio.client_of_flow tls_config ~host flow in
-      Flow.copy_string (Format.asprintf "%a" Razzia.pp_request request) client;
+module TlsClientCfg = Razzia.Private.TlsCfg (Pclock)
+
+let connect ~net (service, host) req =
+  Net.with_tcp_connect net ~service ~host:(Domain_name.to_string host)
+    (fun flow ->
+      let client =
+        Tls_eio.client_of_flow (TlsClientCfg.make req (ref None)) ~host flow
+      in
+      Flow.copy_string (Format.asprintf "%a" Razzia.pp_request req) client;
       let buf = Buf_read.of_flow client ~max_size:Sys.max_string_length in
       try
         match HeaderParser.parse buf with
@@ -52,6 +47,6 @@ let get net req =
   let host = Razzia.host req in
   try connect ~net (Razzia.port req |> Int.to_string, host) req
   with Exn.Io (Net.E (Connection_failure No_matching_addresses), _) ->
-    Error (`Host (`UnknownHost host))
+    Error (`Host (`UnknownHost (Domain_name.to_string host)))
 
 let single_read s = s

@@ -13,14 +13,12 @@ let src = Logs.Src.create "razzia"
 module Log = (val Logs.src_log src : Logs.LOG)
 
 module Make
-    (Random : Mirage_random.S)
-    (Time : Mirage_time.S)
-    (Mclock : Mirage_clock.MCLOCK)
     (Pclock : Mirage_clock.PCLOCK)
-    (Stack : Tcpip.Stack.V4V6) : S with type stack := Stack.t = struct
+    (Stack : Tcpip.Stack.V4V6)
+    (Dns : Dns_client_mirage.S with type Transport.stack = Stack.t) :
+  S with type stack := Stack.t = struct
   module IO = Lwt
   module TLS = Tls_mirage.Make (Stack.TCP)
-  module DNS = Dns_client_mirage.Make (Random) (Time) (Mclock) (Pclock) (Stack)
   module Channel = Mirage_channel.Make (TLS)
 
   type stream = string
@@ -36,10 +34,10 @@ module Make
 
   let gethostbyname dns h =
     let open Lwt.Infix in
-    DNS.gethostbyname dns h >>= function
+    Dns.gethostbyname dns h >>= function
     | Ok addr -> Lwt.return_ok (Ipaddr.V4 addr)
     | Error _ -> (
-        DNS.gethostbyname6 dns h >|= function
+        Dns.gethostbyname6 dns h >|= function
         | Ok addr -> Ok (Ipaddr.V6 addr)
         | Error (`Msg msg) -> Error (`Host (`UnknownHost msg)))
 
@@ -82,21 +80,21 @@ module Make
 
   let single_read s = s
 
+  module TlsClientCfg = Razzia.Private.TlsCfg (Pclock)
+
   let get stack req =
-    let dns = DNS.create stack in
-    let* addr = resolve dns (Razzia.host req) in
+    let dns = Dns.create stack in
+    let host = Razzia.host req in
+    let* addr = Domain_name.to_string host |> resolve dns in
     let^ conn =
       Stack.TCP.create_connection (Stack.tcp stack) (addr, Razzia.port req)
     in
     let^ flow =
-      TLS.client_of_flow
-        (Tls.Config.client ~authenticator:(fun ?ip:_ ~host:_ _ -> Ok None) ())
-        conn
+      TLS.client_of_flow ~host (TlsClientCfg.make req (ref None)) conn
     in
     let^ () = write_request flow req in
     let chan = Channel.create flow in
     let^ header = HeaderParser.parse chan in
-
     match header with
     | Ok header when Razzia.Private.is_success header ->
         let^ body = read_body chan in

@@ -9,16 +9,21 @@ type 'stream t =
       [ `Msg | `NotFound | `Gone | `ProxyRequestRefused | `BadRequest ] * string
   | ClientCertReq of [ `Msg | `CertNotAuth | `CertNotValid ] * string
 
-and 'stream body = { encoding : string option; mime : Mime.t; body : 'stream }
+and 'stream body = {
+  encoding : string option;
+  mime : Mime.t;
+  body : 'stream;
+  raw_meta : string;
+}
 
 type err = [ `InvalidCode of int | `Malformed | `TooLong ]
 
-let of_int meta body = function
+let make meta body = function
   | 10 -> Input { sensitive = false; prompt = meta }
   | 11 -> Input { sensitive = true; prompt = meta }
   | 20 ->
       let ({ encoding; mime } : Mime.t') = Mime.of_string meta in
-      Success { encoding; mime; body }
+      Success { encoding; mime; body; raw_meta = meta }
   | 30 -> Redirect (`Temp, meta)
   | 31 -> Redirect (`Perm, meta)
   | 40 -> TempFailure (`Msg, meta)
@@ -56,32 +61,41 @@ let status_code = function
   | ClientCertReq (`CertNotAuth, _) -> 61
   | ClientCertReq (`CertNotValid, _) -> 62
 
+let meta = function
+  | Input { prompt; _ } -> prompt
+  | Success { raw_meta; _ } -> raw_meta
+  | Redirect (_, m)
+  | TempFailure (_, m)
+  | PermFailure (_, m)
+  | ClientCertReq (_, m) ->
+      m
+
 let make ~header:(status, meta) ~body =
   if String.length meta > 1024 then Error `TooLong
-  else Ok (of_int meta body status)
+  else Ok (make meta body status)
 
 let pp_redirect fmt = function
-  | `Temp -> Format.fprintf fmt "`Temp"
-  | `Perm -> Format.fprintf fmt "`Perm"
+  | `Temp -> Format.pp_print_string fmt "`Temp"
+  | `Perm -> Format.pp_print_string fmt "`Perm"
 
 let pp_temp_failure fmt = function
-  | `Msg -> Format.fprintf fmt "`Msg"
-  | `ServerUnavailable -> Format.fprintf fmt "`ServerUnavailable"
-  | `CGIError -> Format.fprintf fmt "`CGIError"
-  | `ProxyError -> Format.fprintf fmt "`ProxyError"
-  | `SlowDown -> Format.fprintf fmt "`SlowDown"
+  | `Msg -> Format.pp_print_string fmt "`Msg"
+  | `ServerUnavailable -> Format.pp_print_string fmt "`ServerUnavailable"
+  | `CGIError -> Format.pp_print_string fmt "`CGIError"
+  | `ProxyError -> Format.pp_print_string fmt "`ProxyError"
+  | `SlowDown -> Format.pp_print_string fmt "`SlowDown"
 
 let pp_perm_failure fmt = function
-  | `Msg -> Format.fprintf fmt "`Msg"
-  | `NotFound -> Format.fprintf fmt "`NotFound"
-  | `Gone -> Format.fprintf fmt "`Gone"
-  | `ProxyRequestRefused -> Format.fprintf fmt "`ProxyRequestRefused"
-  | `BadRequest -> Format.fprintf fmt "`BadRequest"
+  | `Msg -> Format.pp_print_string fmt "`Msg"
+  | `NotFound -> Format.pp_print_string fmt "`NotFound"
+  | `Gone -> Format.pp_print_string fmt "`Gone"
+  | `ProxyRequestRefused -> Format.pp_print_string fmt "`ProxyRequestRefused"
+  | `BadRequest -> Format.pp_print_string fmt "`BadRequest"
 
 let pp_client_cert fmt = function
-  | `Msg -> Format.fprintf fmt "`Msg"
-  | `CertNotAuth -> Format.fprintf fmt "`CertNotAuth"
-  | `CertNotValid -> Format.fprintf fmt "`CertNotValid"
+  | `Msg -> Format.pp_print_string fmt "`Msg"
+  | `CertNotAuth -> Format.pp_print_string fmt "`CertNotAuth"
+  | `CertNotValid -> Format.pp_print_string fmt "`CertNotValid"
 
 let pp fmt = function
   | Input { sensitive; prompt } ->

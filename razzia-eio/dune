@@ -1,4 +1,4 @@
 (library
  (name razzia_eio)
  (public_name razzia-eio)
- (libraries eio razzia tls-eio))
+ (libraries eio mirage-clock-unix razzia tls-eio))

@@ -7,8 +7,7 @@ let main () =
     match Razzia.make_request (Uri.of_string "gemini://heyplzlookat.me/") with
     | Ok req -> (
         Razzia_unix.get ~v6:Ipaddr.V6.Prefix.global_unicast_001 req >>= function
-        | Ok (Success { encoding = _; mime = Gemtext _; body }) ->
-            Lwt_fmt.printf "%s" body
+        | Ok (Success { mime = Gemtext _; body; _ }) -> Lwt_fmt.printf "%s" body
         | Ok (Success { body; _ }) -> Lwt_fmt.printf "%s" body
         | Ok resp -> Lwt_fmt.printf "%a" Razzia.pp_response resp
         | Error err -> Lwt_fmt.printf "Fetch error: %a" Razzia.pp_err err)
@@ -17,5 +16,5 @@ let main () =
   Lwt_fmt.flush Lwt_fmt.stdout
 
 let () =
-  Mirage_crypto_rng_lwt.initialize ();
+  Mirage_crypto_rng_lwt.initialize (module Mirage_crypto_rng.Fortuna);
   main () |> Lwt_main.run

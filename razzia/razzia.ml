@@ -26,6 +26,7 @@ and 'stream body = 'stream Response.body = {
   encoding : string option;
   mime : mime;
   body : 'stream;
+  raw_meta : string;
 }
 
 and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
@@ -33,6 +34,7 @@ and mime = Mime.t = Gemtext of { lang : string option } | MimeType of string
 type response_err = Response.err
 
 let status_code = Response.status_code
+let meta = Response.meta
 let pp_response = Response.pp
 let pp_response_err = Response.pp_err
 
@@ -68,8 +70,11 @@ module Private = struct
   type header = Header.t
 
   let is_success = Header.is_success
-
   let make_response = Response.make
+
+  module type TLS_CFG = Request.TLS_CFG
+
+  module TlsCfg = Request.TlsCfg
 
   module type CHANNEL = Header.CHANNEL
   module type S = Header.S

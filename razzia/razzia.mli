@@ -14,15 +14,20 @@ type request_err =
   | `MalformedUTF8  (** URL contains malformed UTF-8. *)
   | `MissingHost  (** Host component of URL is not present. *)
   | `MissingScheme  (** Scheme component of URL is not present. *)
-  | `UserInfoNotAllowed  (** User info component of URL is provided. *) ]
+  | `UserInfoNotAllowed  (** User info component of URL is provided. *)
+  | `DomainNameError of string  (** {module:Domain_name} error. *) ]
 
 val make_request :
-  ?default_scheme:string -> Uri.t -> (request, request_err) result
+  ?trusted:(string * int * string * float) list ->
+  ?client_cert:Tls.Config.own_cert ->
+  ?default_scheme:string ->
+  Uri.t ->
+  (request, request_err) result
 (** Creates a {type:request} from an URL. [query] is [query] component used *)
 
 (** Assuming URL is "heyplzlookat.me:80/index.html?foobar". *)
 
-val host : request -> string
+val host : request -> [ `host ] Domain_name.t
 (** [host req] is ["heyplzlookat.me"]. *)
 
 val port : request -> int
@@ -54,6 +59,7 @@ and 'stream body = 'stream Response.body = {
   encoding : string option;  (** Charset of the document. *)
   mime : mime;  (** MIME type of the body. *)
   body : 'stream;  (** Content of the body. *)
+  raw_meta : string;
 }
 
 and mime = Mime.t =
@@ -70,8 +76,11 @@ type response_err =
   | `Malformed  (** Response header is unparsable. *)
   | `TooLong  (** Response header is longer than 1024 characters. *) ]
 
-val status_code : 'a response -> int
+val status_code : _ response -> int
 (** Retrieve the status code of response header. *)
+
+val meta : _ response -> string
+(** Retrieve meta string of response header. *)
 
 val pp_response : Format.formatter -> 'a response -> unit
 val pp_response_err : Format.formatter -> response_err -> unit
@@ -107,15 +116,22 @@ module type NET = sig
   val get : stack -> request -> (stream response, err) result IO.t
 end
 
-module Private : sig
-  (** You can ignore it. *)
+(**/**)
 
+module Private : sig
   type header = Header.t
 
   val is_success : header -> bool
 
   val make_response :
     header:header -> body:'a -> ('a response, response_err) result
+
+  module type TLS_CFG = sig
+    val make :
+      request -> (string * int * string * float) option ref -> Tls.Config.client
+  end
+
+  module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG
 
   module type CHANNEL = sig
     module IO : IO
@@ -137,3 +153,5 @@ module Private : sig
   module MakeParser (Chan : CHANNEL) :
     S with module IO := Chan.IO and type src := Chan.src
 end
+
+(**/**)

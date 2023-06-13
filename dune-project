@@ -24,25 +24,27 @@
  (depends
   (ocaml
    (>= 4.14))
+  (mirage-clock
+   (>= 4.2.0))
   (uri
    (>= 4.2.0))
   (re
-   (>= 1.10.4))))
+   (>= 1.10.4))
+  (tls
+   (>= 0.16.0))
+  (x509
+   (>= 0.16.4))))
 
 (package
  (name razzia-mirage)
  (synopsis "Razzia IO implementation for MirageOS")
  (depends
   razzia
-  (dns-client
-   (>= 6.4.1))
+  (dns-client-mirage
+   (>= 7.0.0))
   (mirage-channel
    (>= 4.1.0))
-  (mirage-random
-   (>= 3.0.0))
-  (mirage-time
-   (>= 3.0.0))
-  (tls
+  (tls-lwt
    (>= 0.15.4))
   (tls-mirage
    (>= 0.15.4))))
@@ -52,11 +54,9 @@
  (synopsis "Razzia IO implementation using UNIX bindings")
  (depends
   razzia
-  razzia-mirage 
+  razzia-mirage
   (mirage-clock-unix
    (>= 4.2.0))
-  (mirage-random
-   (>= 3.0.0))
   (mirage-random-stdlib
    (>= 0.1.0))
   (mirage-time-unix
@@ -71,5 +71,7 @@
   razzia
   (eio
    (>= 0.6))
+  (mirage-clock-unix
+   (>= 4.2.0))
   (tls-eio
    (>= 0.15.5))))
