@@ -15,12 +15,11 @@ module Log = (val Logs.src_log src : Logs.LOG)
 module Make
     (Pclock : Mirage_clock.PCLOCK)
     (Stack : Tcpip.Stack.V4V6)
-    (Dns_ : Dns_client.S with type stack = Stack.t and type 'a io = 'a Lwt.t) :
+    (Dns : Dns_client_mirage.S with type Transport.stack = Stack.t) :
   S with type stack := Stack.t = struct
   module IO = Lwt
   module TLS = Tls_mirage.Make (Stack.TCP)
   module Channel = Mirage_channel.Make (TLS)
-  module Dns = Dns_client.Make (Dns_)
 
   type stream = string
 

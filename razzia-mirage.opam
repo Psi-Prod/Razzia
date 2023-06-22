@@ -10,7 +10,7 @@ bug-reports: "https://github.com/Psi-Prod/Razzia/issues"
 depends: [
   "dune" {>= "3.0"}
   "razzia"
-  "dns-client" {>= "7.0.0"}
+  "dns-client-mirage" {>= "7.0.0"}
   "mirage-channel" {>= "4.1.0"}
   "tls-lwt" {>= "0.15.4"}
   "tls-mirage" {>= "0.15.4"}
