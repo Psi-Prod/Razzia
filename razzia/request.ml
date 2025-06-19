@@ -104,7 +104,7 @@ module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
     let authenticator ?ip:_ ~host certs =
       let cert = List.hd certs in
       let srv_fingerprint =
-        X509.Certificate.fingerprint `SHA256 cert |> Cstruct.to_string
+        X509.Certificate.fingerprint `SHA256 cert
       in
       let exp_date =
         X509.Certificate.validity cert |> snd |> Ptime.to_float_s
@@ -117,7 +117,6 @@ module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
       in
       let fingerprint =
         Option.fold tofu ~none:srv_fingerprint ~some:(fun (_, _, f, _) -> f)
-        |> Cstruct.of_string
       in
       let v =
         X509.Validation.trust_cert_fingerprint ~host
@@ -130,4 +129,5 @@ module TlsCfg (P : Mirage_clock.PCLOCK) : TLS_CFG = struct
       v
     in
     Tls.Config.client ~authenticator ~certificates:req.client_cert ()
+    |> Result.get_ok
 end
